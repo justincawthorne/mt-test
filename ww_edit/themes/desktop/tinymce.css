@@ -1,0 +1,130 @@
+/* resets */
+
+.mceContentBody ul,
+.mceContentBody ol,
+.mceContentBody li {
+	margin: 0;
+	padding: 0;
+	list-style:none;
+}
+.mceContentBody h1,
+.mceContentBody h2,
+.mceContentBody h3,
+.mceContentBody h4,
+.mceContentBody h5,
+.mceContentBody h6, 
+.mceContentBody p,
+.mceContentBody blockquote {
+	margin: 0;
+	padding: 0;
+}
+
+/* general styles */
+
+body.mceContentBody {
+   background-color: #fff;
+   font-family: Helvetica, Arial, sans-serif;
+   font-size: 100%;
+   margin: 6px;
+   padding: 0;
+}
+.mceContentBody a {
+	text-decoration: none;
+	color: #333;
+}
+.mceContentBody h2 {
+	font-size: 1.25em;
+	line-height: 2.5em;
+	clear: both;
+	color: #666;
+}
+.mceContentBody h3 {
+	font-size: 1.0em;
+	line-height: 1.5em;
+	clear: both;
+}
+.mceContentBody h4 {
+	font-size: 0.875em;
+	line-height: 1.5em;
+	clear: both;
+}
+.mceContentBody h5 {
+	font-size: 0.875em;
+}
+.mceContentBody h6 {
+	font-size: 0.75em;
+	font-weight: bold;
+}
+.mceContentBody code {
+	font-family: times;
+}
+.mceContentBody p, 
+.mceContentBody ul,
+.mceContentBody ol,
+.mceContentBody blockquote {
+	font-size: 0.8125em;  /* 13px */
+	line-height: 1.5em;
+	margin: 0.8125em 0;
+}
+
+/* more specific styles */
+
+.mceContentBody  blockquote {
+	border-left: solid 3px #cccccc;
+	padding-left: 10px;
+	color: #333333;
+	font-size: 0.925em;
+	margin-left: 36px;
+}
+.mceContentBody  blockquote.code {
+	border-left: dashed 3px #cccccc;
+}
+.mceContentBody blockquote.code p {
+	margin-top: 2px;
+	margin-bottom: 2px;
+	border-bottom: dotted 1px #ccc;
+}
+.mceContentBody .pullquote {
+	color: #AB9682;
+	width: 160px;
+	text-align: center;
+	font-weight: bold;
+	font-size: 0.75em;
+	line-height: 1.25em;
+}
+.mceContentBody .imagecaption {
+	background-color: #AB9682;
+	font-family: arial;
+	text-align: center;
+	padding-bottom: 4px;
+	font-size: 0.875em;
+}
+.mceContentBody .imagecaption h1 {
+	margin-bottom: 0px;
+}
+.mceContentBody .imagecaption p {
+	color: #333333;
+	font-weight: bold;
+	margin-top: 0px;
+	margin-bottom: 2px;
+}
+.mceContentBody .left {
+	margin-right: 10px;
+	margin-top: 4px;
+	margin-bottom: 4px;
+	border: none;
+	float: left;
+}
+.mceContentBody .right {
+	margin-left: 10px;
+	margin-top: 4px;
+	margin-bottom: 4px;
+	border: none;
+	float: right;
+}
+.mceContentBody .center {
+	margin-top: 10px;
+	margin-bottom: 10px;
+	margin-left: auto;
+	margin-right: auto;
+}

@@ -1,0 +1,183 @@
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 100%;
+}
+body{
+	text-align: center; 
+	background-color: #eee;
+	width: 100%;
+}
+a {
+	text-decoration: none;
+}
+
+#header {
+	background-color: #660000;
+	border-bottom: solid 1px #ccc;
+	border-left: solid 1px #ccc;
+	border-right: solid 1px #ccc;
+}
+#header h1 {
+	font-size: 2em;
+	margin: 0 auto;
+	padding: 8px 0;
+	color: #eee;
+}
+#header img {
+	border: none;
+}
+
+#login_message {
+	border: dotted 1px #cc0000;
+	font-size: 0.875em;	
+	margin-top: 24px;
+	margin-bottom: 24px;
+	padding: 8px;
+	background-color: #f4f4f4;
+	font-weight: bold;
+}
+#page {
+	position: relative;
+	clear: both;
+	width: 448px;
+	margin: 0 auto;
+	min-height: 100%;
+	background-color: #fff;
+	padding-left: 10px;
+	padding-right: 10px;
+	
+	border-left: solid 1px #999;
+	border-right: solid 1px #999;
+}
+#content {
+	padding-bottom: 60px;
+	text-align: center;
+	height: auto;
+	clear: both;
+
+}
+
+#content h2 {
+	font-size: 0.875em;
+	color: #666;
+	border-top: dotted 1px #ccc;
+	margin-top: 24px;
+}
+#content p {
+	font-size: 0.875em;
+}
+#content ul {
+	margin-left: 180px;
+	margin-right: 120px;
+	line-height: 1.4em;
+	text-align: left;
+}
+#content li {
+	margin-bottom: 1em;
+}
+
+
+
+#content #bouncer_loginform {
+	margin-top: 20px;
+	background-color: #f4f4f4;
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+
+#content #bouncer_loginform label {
+	font-weight: bold;
+	color: #660000;
+	margin-top: 12px;
+	margin-bottom: 2px;
+}
+#content #bouncer_loginform input {
+	margin-bottom: 12px;
+	margin-top: 2px;
+	width: 180px;
+	height: 22px;
+	text-align: center;
+}
+#content #bouncer_loginform input:focus {
+	border-color: #660000;
+}
+#content #bouncer_loginform #pass {
+}
+#content #bouncer_loginform #email {
+}
+#content #bouncer_loginform input[type="checkbox"] {
+	width: 24px;
+	margin: 0px;
+	padding: 0;
+	vertical-align: middle;
+}
+#content #bouncer_loginform label[for="remember"] {
+	margin: 0px;
+	padding: 0;
+	vertical-align: middle;
+
+}
+#content #bouncer_loginform input[type="submit"] {
+	width: 80px;
+	height: auto;
+	margin-top: 4px;
+}
+
+
+#footer {
+	position: relative;
+	clear: both;
+	margin: 0 auto;
+	width: 470px;
+	margin-top: -40px;
+	height: 40px;
+	background-color: #660000;
+	color: #ccc;
+}
+#footer p {
+	font-size: 0.75em;	
+	margin-top: 0px;
+	padding-top: 4px;
+}
+#footer a {
+	color: #fff;
+}
+
+/* non-form styles */
+
+#details {
+	text-align: left;
+	margin-left: 90px;
+	margin-right: 90px;
+}
+#details h4 {
+	background-color: #ccc;
+	padding-left: 10px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+#guests {
+	text-align: left;
+	padding-left: 90px;
+	padding-right: 90px;
+}
+#guests h4 {
+	background-color: #ccc;
+	padding-left: 10px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+
+/* iphone styles */
+
+@media screen and (max-device-width: 480px){
+	
+	#content #bouncer_loginform input[type="submit"] {
+		font-size: 14pt;
+		width: auto;
+	}	
+
+}

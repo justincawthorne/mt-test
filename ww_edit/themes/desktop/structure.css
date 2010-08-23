@@ -1,0 +1,81 @@
+html, body {
+	height: 100%;
+	margin: 0px;
+	text-align: center; 
+	padding: 0;
+}
+body {
+
+}
+#outer_wrapper {
+	position: relative;
+	min-height: 100%;
+	margin: 0 auto;
+	text-align: left;
+	width: 100%;
+}
+#inner_wrapper {
+	min-height: 100%;
+	width: 100%;
+}
+
+
+#header {
+	position: relative;
+	height: 100px;
+}
+#header * {
+	margin: 0;
+	/* to prevent header pushing down from page top */
+}
+#header_panel {
+	position: absolute;
+	top: 0;
+	right: 0;
+	text-align: right;
+	width: auto;
+	height: auto;
+}
+
+
+
+#content_wrapper {
+	position: relative;
+	/*float: left;*/
+	/* padding-bottom should equal height of footer, 
+	including borders and padding  */
+	padding-bottom: 60px;
+	padding-bottom: 80px;
+	width: 100%;
+	width: 960px;
+	margin: 0 auto;
+	overflow: auto;
+}
+
+#main_content {
+	width: 680px;
+	/*position: relative;*/
+	float: left;
+	overflow: hidden;
+}
+
+#aside {
+	float:right;
+	width:200px;
+}
+
+
+#footer{
+	position: relative;
+	clear: both;
+	margin: 0 auto;
+	width: 100%;
+	margin-top: -60px;
+	height: 60px;
+	text-align: center;
+	/* if borders are added to footer then the footer-height will need
+	   to be adjusted in a later style sheet */
+}
+#footer * {
+	margin: 0px;
+}

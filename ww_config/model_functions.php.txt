@@ -1,0 +1,278 @@
+<?php
+	error_reporting (E_ALL);
+/**
+ * -----------------------------------------------------------------------------
+ * USER EDITABLE VARIABLES
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * reader = frontend user | author = admin/backend user
+ * 
+ * required reader rights: SELECT, INSERT
+ * required author rights: SELECT, INSERT, UPDATE, DELETE
+ * 
+ * if a seperate reader level mysql account hasn't been created either leave
+ * the reader parameters empty or use the same values as the author parameters
+ */
+
+	function conn_params() {
+		// database details
+		$conn_param['hostname'] 		= '';
+		$conn_param['database'] 		= '';
+		
+		// author/admin username and password
+		$conn_param['author']['user']	= '';
+		$conn_param['author']['pass']	= '';
+		
+		// reader username and password
+		$conn_param['reader']['user']	= '';
+		$conn_param['reader']['pass']	= '';
+		// return parameters
+		return $conn_param;
+	}
+
+/**
+ * url root values
+ * 
+ * these should be defined automatically, but can be 
+ * defined manually here if needed
+ * 
+ * set_ww_root		- this is the internal path (e.g. /var/www/path/to/blog
+ * set_ww_web_root 	- this is the web address (e.g. http://www.blog.com)
+ */
+
+		$set_ww_root 		= ""; // leave blank unless necessary
+		$set_ww_web_root 	= ""; // leave blank unless necessary
+
+/**
+ * -----------------------------------------------------------------------------
+ * DON'T EDIT BELOW THIS LINE
+ * this section contains all functions pertaining to database connection scripts,
+ * defines the WW_ROOT constant, and pulls the config settings data from the database
+ * -----------------------------------------------------------------------------
+ */
+
+	// quick check for mysqli
+	// kill the app dead if no mysqli functions on server
+	
+		if(!function_exists('mysqli_connect')) {
+			die('This version of wicked words requires mysqli - you might need a more recent version of php');
+		} 	
+
+/**
+ * author_connect()
+ * 
+ * sets up a database connection for the author
+ * returns a more detailed error if connection fails
+ * 
+ * @return	object	$conn			database connection
+ */
+ 
+ 	function author_connect() {
+		//$params		= conn_param($conn_param);
+		$params = conn_params();
+		$host 		= $params['hostname'];
+		$user 		= $params['author']['user'] ;
+		$pass 		= $params['author']['pass'] ;
+		$database 	= $params['database'];
+
+		// attempt connection
+		$conn = @new mysqli($host, $user, $pass, $database);
+		if (mysqli_connect_error()) {
+    		die('Connect Error: (' . mysqli_connect_errno() . ') '. mysqli_connect_error());
+		} else {
+			return $conn;
+		}
+ 	}
+
+/**
+ * reader_connect()
+ * 
+ * sets up a database connection for the reader
+ * returns a basic error if connection fails
+ * default to the admin/author connection if reader parameters not set
+ * 
+ * @return	object	$conn			database connection
+ */
+ 
+ 	function reader_connect() {
+		//$params		= conn_param();
+		$params = conn_params();
+		$host 		= $params['hostname'];
+		$user 		= (!empty($params['reader']['user'])) ? $params['reader']['user'] : $params['author']['user'] ;
+		$pass 		= (!empty($params['reader']['pass'])) ? $params['reader']['pass'] : $params['author']['pass'] ;
+		$database 	= $params['database'];
+
+		// attempt connection
+		$conn = @new mysqli($host, $user, $pass, $database);
+		if (mysqli_connect_error()) {
+		    die('There was a problem connecting to the database. Please try again in a few minutes.');
+		} else {
+			return $conn;
+		}
+ 	}
+
+/**
+ * get_settings()
+ * 
+ * retrieves all details from the settings table in the database
+ * 
+ * @return	array	$settings	data array
+ */
+ 	
+ 	function get_settings($element_name = '') {
+		$conn = author_connect();
+		$query = "	SELECT 	element_name, 
+							property_name, 
+							property_value 
+					FROM 	settings";
+		if(!empty($element_name)) {
+			$query .= "
+					WHERE element_name LIKE '".$conn->real_escape_string($element_name)."'";
+		}
+		$result = $conn->query($query);
+		// create dynamic variables from database
+		//echo $query;
+		$data = array();
+		if($result) {
+			while($row = $result->fetch_assoc()) { 
+				$element = strtolower($row['element_name']);
+				$key 	= $row['property_name'];
+				$data[$element][$key] = $row['property_value'];
+			}
+		}
+		return $data;	
+ 	}
+
+/**
+ * get_mysql_time()
+ * 
+ * retrieves the current time from the mysql database for display
+ * in the author area header
+ * 
+ * @return	string	$row['mysql_now']	current timestamp
+ */
+	
+	function get_mysql_time() {
+		$conn = author_connect();
+		$query = "SELECT now() as mysql_now";
+		$result = $conn->query($query);
+		$row = $result->fetch_assoc();
+		return $row['mysql_now'];		
+	}
+
+/**
+ * set_mysql_timezone()
+ * 
+ * updates the mysql database timezone to match the php server time
+ * in case where the TZ variable is set - this allows for the site to 
+ * be hosted in a different timezone if needed
+ * http://php.net/manual/en/timezones.php
+ * 
+ * @param	string	$tz		timezone variable
+ */
+	
+	function set_mysql_timezone($tz) {
+		if(empty($tz)) {
+			return false;
+		}
+		// can we set the mysql timezone
+		$conn = author_connect();
+		$set_time = "SET time_zone = '".$tz."'";
+		$rs_settime = $conn->query($set_time);
+		if(!$rs_settime) { 
+			return false; 
+		}		
+		// adjust php timezone
+		putenv("TZ=".$tz.""); 		
+	}
+
+
+/**
+ * debug_array
+ *
+ * function to display arrays in readable format
+ *
+ * @param	array	$arr	array to display
+*/
+
+	function debug_array($arr) {
+		print "<pre>";
+		print_r($arr);
+		print "</pre>";
+	}
+
+/**
+ * stripslashes_deep
+ * 
+ * function to remove added slashes from an array or string
+ *
+ * @param	array/string	$value	data to stripslashes from
+*/
+
+	function stripslashes_deep($value){
+	    $gmq = get_magic_quotes_gpc();
+	    if(empty($gmq)){
+	    	return $value;
+    	}
+		$value = is_array($value) 
+			? array_map('stripslashes_deep', $value) 
+			: stripslashes($value);
+	    return $value;
+	}
+
+/**
+ * -----------------------------------------------------------------------------
+ * DECLARATIONS
+ * where we grab a few database settings and variables right away
+ * -----------------------------------------------------------------------------
+ */	
+	
+	// get root constants and some related details
+	require_once('root_functions.php');
+
+	// get settings and create a 'config' array
+ 	$config = get_settings();
+
+	if(!empty($config)) {
+	
+		// create an entry for use in the head/title tag
+	 	$config['site']['meta_title'] = $config['site']['title'];
+		
+		// create a new 'site/meta' node
+		$config['site']['meta'] = $config['meta'];
+		
+		// remove the original 'meta' node
+	 	unset($config['meta']);
+	
+		// change mysql timezone if needed
+
+		 if(!empty($config['admin']['timezone'])) {
+	 		set_mysql_timezone($config['admin']['timezone']);
+	 	}
+	 	
+ 	}
+ 	
+/**
+ * -----------------------------------------------------------------------------
+ * DEBUGGING
+ * set $debug_mode to 1 to see site variables and other debug data
+ * -----------------------------------------------------------------------------
+ */
+ 	
+ 	$debug_mode = 0;
+ 	
+ 	if(!empty($debug_mode)) {
+	 	
+	 	debug_array($config);
+	
+	 	echo "
+	 	<p>PHP time: ".date('d/m/y H:i:s')."</p>
+		<p>MySQL time: ".date('d/m/y H:i:s',strtotime(get_mysql_time()))."</p>";
+		
+	}
+	
+	
+	
+?>
