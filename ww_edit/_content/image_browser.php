@@ -45,7 +45,7 @@
 	
 // now bring in our functions	
 	
-	include_once(WW_ROOT.'/ww_config/model_functions.php');
+	//include_once(WW_ROOT.'/ww_config/model_functions.php');
 	//include_once(WW_ROOT.'/ww_config/controller_functions.php');
 	include_once(WW_ROOT.'/ww_config/author_controller_functions.php');
 	include_once(WW_ROOT.'/ww_config/author_view_functions.php');
@@ -67,8 +67,8 @@
 	$all_images = get_images(7);
 	// $author_images = list_images(7,1);
 	
-	$total_pages = $all_images['total_pages'];
-	$total_images = $all_images['total_images'];
+	$total_pages = $all_images[0]['total_pages'];
+	$total_images = $all_images[0]['total_images'];
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">

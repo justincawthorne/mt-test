@@ -59,9 +59,9 @@
 	
 	$quicklinks = '
 		<ul>
-			<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=comments">Manage Comments</a></li>
 			<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=categories">Manage Categories</a></li>
 			<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=tags">Manage Tags</a></li>
+			<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=authors">Manage Authors</a></li>
 		</ul>
 	';
 
@@ -70,7 +70,8 @@
 
 	$main_content = show_page_header($left_header, $right_header);
 	$main_content .= "
-		<h4>Your most recent articles are listed below.<br />To view all articles posted to the site click on the <strong><a href=\"".$_SERVER["PHP_SELF"]."?page_name=articles\">Articles</a></strong> item in the menu.</h4>";
+		<h4>Your most recent articles are listed below.</h4>
+		<p>To view all articles posted to the site click on the <strong><a href=\"".$_SERVER["PHP_SELF"]."?page_name=articles\">Articles</a></strong> item in the menu.</p>";
 	
 	// output articles list
 

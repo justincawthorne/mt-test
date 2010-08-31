@@ -20,6 +20,7 @@
 	ini_set('display_errors', 1);
 
 include_once('../ww_config/model_functions.php');
+include_once('../ww_config/combined_functions.php');
 include_once('../ww_config/controller_functions.php');
 include_once('../ww_config/view_functions.php');
 

@@ -182,7 +182,7 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
  * 
  */
 
-	function build_admin_main($html_content = '') {
+	function insert_main_content_admin($html_content = '') {
 		echo '
 		<!-- main content section -->
 		
@@ -204,13 +204,35 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
  * 
  */
 
-	function build_admin_aside($html_content = '') {
+	function insert_aside_admin($html_content = '') {
 		echo '
 		<!-- aside section -->
 		
 		<div id="aside">
 			'.$html_content.'
 		</div>';
+	}
+
+/**
+ * show_page_header
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+ 
+	function show_page_header($left_text, $right_text) {
+		$html = '
+		<!-- page header -->
+		<div id="page_header">
+			<span class="header_left">'.$left_text.'</span>
+			<span class="header_right">'.$right_text.'</span>
+		</div>
+		';
+		return $html;
+
 	}
 
 /**
@@ -544,11 +566,12 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 
 	function build_write_form($article_data, $config) {
 		// start tabs
+		$attachments_total = count($article_data['attachments']);
 		$form = '
 				<div id="article_tabs">
 				<ul>
 					<li><a href="#tab_article">Article</a></li>
-					<li><a href="#tab_attachments">Attachments</a></li>
+					<li><a href="#tab_attachments">Attachments ('.$attachments_total.')</a></li>
 					<li><a href="#tab_seo">SEO</a></li>
 					<li><a href="#tab_comments">Comments</a></li>
 					<li><a href="#tab_edits">Edits</a></li>
@@ -864,7 +887,7 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 					foreach($article_data['attachments'] as $attach) {
 						$html .= '
 						<li>
-							<label for="attachments['.$attach['id'].']" title="'.$attach['filename'].'">
+							<label for="attachments['.$attach['id'].']">
 							<input type="checkbox" name="attachments['.$attach['id'].']" id="attachments['.$attach['id'].']" value="'.$attach['id'].'" checked="checked"/>
 							'.$attach['title'].'</label>
 						</li>
@@ -1047,11 +1070,11 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 					
 					<div class="file_name">
 						<a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments&amp;attachment_id='.$file['id'].'">
-						'.$file['filename'].'</a>
+						'.$file['title'].'</a>
 					</div>
 					
 					<div class="file_title">
-						'.$file['title'].'
+						'.$file['filename'].'
 					</div>
 	
 					<div class="file_type">
@@ -1087,17 +1110,13 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 				<li>
 					
 					<div class="file_name">
-						<a href="'.$_SERVER["PHP_SELF"].'?page_name=files&amp;folder='.$file['path'].'&amp;filename='.$file['filename'].'">
+						<a href="'.$file['link'].'">
 						'.$file['filename'].'</a>
 					</div>
 					
 					<div class="file_title">
-						directory: <a href="'.$_SERVER["PHP_SELF"].'?page_name=files&amp;folder='.$file['path'].'">
-						'.$file['path'].'</a>
-					</div>
-	
-					<div class="file_type">
-						'.$file['ext'].'
+						folder: <a href="'.$_SERVER["PHP_SELF"].'?page_name=files&amp;folder='.$_GET['folder'].'">
+						'.$_GET['folder'].'</a>
 					</div>
 					
 					<div class="file_size">
@@ -1105,11 +1124,15 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 					</div>	
 					
 					<div class="file_date">
-						uploaded: '.from_mysql_date($file['date_uploaded']).'
+						uploaded: '.date('d F Y',$file['date_uploaded']).'
+					</div>
+					
+					<div class="file_author">
+						type: '.$file['ext'].'
 					</div>	
 		
 					<div class="file_delete">
-						<a href="'.$_SERVER["PHP_SELF"].'?page_name='.$type.'&amp;action=delete&amp;filename='.$file['filename'].'">
+						<a href="'.$_SERVER["PHP_SELF"].'?page_name=files&amp;action=delete&amp;folder='.$_GET['folder'].'&amp;filename='.$file['filename'].'">
 						delete</a>
 					</div>
 					

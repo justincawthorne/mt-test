@@ -56,10 +56,14 @@ a {
 a:hover {
 	color: #990000;
 }
+a img {
+	border: none;
+}
 hr {
 	border: solid 1px #fff;
 	border-top: solid 1px #ccc;
 	height: 2px;
+	clear: both;
 }
 
 #outer_wrapper {
@@ -378,6 +382,55 @@ ul.file_listing div.file_delete {
 ul.file_listing div.file_delete a:hover {
 	color: #cc0000;
 }
+
+/* ------------- links listing styles ----------------*/
+
+ul.links_listing {
+	overflow: auto;
+	width: 100%;
+	color: #666;
+	margin: 24px 0;
+}
+ul.links_listing li {
+	border-bottom: solid 1px #ccc;
+	padding: 6px 0;
+	float: left;
+	width: 100%;
+}
+ul.links_listing li div {
+	float: left;
+}
+ul.links_listing div.link_category {
+	font-weight: bold;
+}
+ul.links_listing div.link_title {
+	float: left;
+	font-weight: bold;
+	width: 260px;
+	font-size: 1.125em;
+	margin-left: 4px;
+}
+ul.links_listing div.link_url {
+}
+ul.links_listing div.link_summary {
+	clear: left;
+	margin-left: 264px;
+	width: 360px;
+}
+ul.links_listing div.link_attributes {
+	clear: left;
+	margin-left: 264px;
+	width: 360px;
+}
+ul.links_listing div.link_delete {
+	float: right;
+	margin-right: 4px;
+	color: #888;
+}
+ul.links_listing div.link_delete a:hover {
+	color: #cc0000;
+}
+
 /* ------------- listing nav styles ----------------*/
 
 #page_nav {
@@ -560,6 +613,14 @@ ul.comment_listing li div.comment_actions span.delete_link a{
 }
 #main_content form input[readonly] {
 	border: dashed 1px #ccc;
+	background: none;
+	border: solid 1px #ddd;
+	color: #666;
+}
+#main_content form input.optional,
+#main_content form select.optional,
+#main_content form textarea.optional {
+	border: dashed 1px #ccc;
 }
 #main_content form input.unlabelled {
 	float: left;
@@ -618,6 +679,13 @@ ul.comment_listing li div.comment_actions span.delete_link a{
 	clear: both;
 	margin-left: 130px;
 	color: #666;
+}
+
+/* image details form */
+
+form#image_details {
+	width: 410px;
+	float: left;
 }
 
 /* settings form */
@@ -681,21 +749,33 @@ ul.comment_listing li div.comment_actions span.delete_link a{
 
 div.gallery_item {
 	float: left;
-	width: 160px; 
+	width: 158px; 
 	height:162px; 
 	padding: 4px;
-	margin-bottom: 4px; 
+	margin-bottom: 8px; 
 	margin-right: 2px; 
-	background-color: #efefef; 
+	background-color: #f4f4f4;
+	background-color: #fff;
 	text-align: center;
+	border: solid 1px #ccc;
+	border-left-color: #eee;
+	border-top-color: #eee;
 }
+
 div.gallery_item .thumb {
-	width: 160px; 
+	width: auto; 
 	height: 120px;
 	line-height: 120px;
-	background-color: #fff; 
-	text-align: center; 
+	background-color: #fff;
+	background-color: #f4f4f4;
+	text-align: center;
+	border: solid 1px #ccc;
+	border-right-color: #eee;
+	border-bottom-color: #eee;
 	overflow: hidden;
+}
+div.gallery_item .notfound {
+	background-color: #990000;
 }
 div.gallery_item .thumb img {
 	vertical-align: middle;
@@ -843,8 +923,12 @@ ul.ui-tabs-nav li.ui-tabs-selected a:hover {
 	display: none;
 }
 #article_tabs ul.ui-tabs-nav li.ui-state-default a {
-	padding: 2px 8px;
-	width: 100px;	
+	padding: 2px 6px;
+	width: 114px;	
+}
+#links_tabs ul.ui-tabs-nav li.ui-state-default a {
+	padding: 2px 6px;
+	width: 114px;	
 }
 #settings_tabs ul.ui-tabs-nav li.ui-state-default {
 	font-size: 0.75em;

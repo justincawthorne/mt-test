@@ -124,15 +124,24 @@
 		$url_path = $this_host.$root_suffix;
 		return $url_path;
 	}
+
+/**
+ * get_root_suffix
+ * 
+ * this only required usually if wicked words is in a subfolder
+ * it takes any section of the path between the document root and the ww_config folder
+ * and adds it onto the http host path
+ */
 	
 	function get_root_suffix($file_path) {
+		
 		$doc_root = $_SERVER['DOCUMENT_ROOT'];
-		$server_path = get_server_path($file_path); // this will be the same as BOUNCE_ROOT
-		if ((strpos($server_path, $doc_root)) !== false) {
+		$doc_root_alt = realpath($_SERVER['DOCUMENT_ROOT']);
+		$server_path = get_server_path($file_path);
+		if((strpos($server_path, $doc_root)) !== false) {
 			$root_suffix = str_replace($doc_root,'',$server_path);
-		} elseif(!empty($_SERVER['SCRIPT_FILENAME'])) {
-			$server_path = get_server_path($_SERVER['SCRIPT_FILENAME']);
-			$root_suffix = str_replace($doc_root,'',$server_path);
+		} elseif((strpos($server_path, $doc_root_alt)) !== false) {
+			$root_suffix = str_replace($doc_root_alt,'',$server_path);
 		} else {
 			$root_suffix = '';
 		}
@@ -187,6 +196,7 @@
 	define('WW_WEB_ROOT',$ww_web_root);
 	define('WW_REAL_WEB_ROOT',$ww_real_web_root);
 
+
 /**
  * -----------------------------------------------------------------------------
  * DEBUGGING
@@ -194,8 +204,8 @@
  */
  
  	// set debug_mode at the end of model_functions.php to 1 to display debugging info
-
 	if(!empty($debug_mode)) {
+		echo __FILE__.' - <b>FILE</b><br/>';
 		echo constant('WW_ROOT').' - <b>WW_ROOT</b><br/>';
 		echo constant('WW_WEB_ROOT').' - <b>WW_WEB_ROOT</b><br/>';
 		echo constant('WW_REAL_WEB_ROOT').' - <b>WW_REAL_WEB_ROOT</b><br/>';

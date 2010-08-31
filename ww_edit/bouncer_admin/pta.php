@@ -13,7 +13,7 @@
 
 	error_reporting (E_ALL ^ E_NOTICE);
 	
-	include('pta/MAIS.php');
+	include('pta/external_login.php');
 
 /* --- logout and login calls here -------------------------------------------------------------------*/
 	
@@ -23,7 +23,8 @@
 		bouncer_logout();		
 		
 		// now insert logout call for external pta function here
-		header('Location: https://mais.murdoch.edu.au/logout?from='.WW_WEB_ROOT.'/ww_edit/index.php');
+		$external_logout_script = '';
+		header('Location: '.$external_logout_script);
 		exit();
 		
 	} else { // if we're not logging out then call our external pta script
@@ -33,16 +34,13 @@
 			to match up to the values stored in the ww_authors database table
 		*/
 		
-		$MAISParams['access'] 		= "mais";
-		$MAISParams['mais.group'] 	= "staff"; 		// permitted user group
-		$MAISParams['mais.timeout'] = "120";
-		MAIS_Check($MAISParams, $MAISData, true);	// MAIS verification
+		$login_params = array();
 		
 		// return the email and password - these are used in 
 		// the pta function call at the bottom of the page
 		
-		$email		= $MAISData['MAIS_pref_email'];
-		$password	= $MAISData['MAIS_username'];	
+		$email		= $login_params['email'];
+		$password	= $login_params['password'];	
 	}
 
 /* --- DO NOT ALTER BELOW THIS LINE --------------------------------------------------------------- */

@@ -34,8 +34,9 @@
 // now bring in our functions	
 	
 	include_once('../ww_config/model_functions.php');
-	include_once('../ww_config/controller_functions.php');
-	include_once('../ww_config/view_functions.php');
+	// include_once('../ww_config/controller_functions.php');
+	// include_once('../ww_config/view_functions.php');
+	include_once('../ww_config/combined_functions.php');
 	include_once('../ww_config/author_controller_functions.php');
 	include_once('../ww_config/author_view_functions.php');
 
@@ -109,6 +110,12 @@
 	$content_partial = WW_ROOT.'/ww_edit/_content/_'.$page_name.'.php';
 
 
+// current url
+
+	$url = current_url();
+	$action_url = htmlspecialchars($url); // with entities for xhtml validity
+
+
 // now buffer main content into a variable
 		
 	    ob_start();
@@ -116,8 +123,8 @@
 		$main_content = '';						// initialize content variables
 		$aside_content = '';
 		include $content_partial;				// get content
-		echo build_admin_main($main_content);	// build into html structure
-		echo build_admin_aside($aside_content);		
+		echo insert_main_content_admin($main_content);	// build into html structure
+		echo insert_aside_admin($aside_content);		
 	    $page_content = ob_get_contents();		//load into $page_content variable
 
 	    ob_end_clean();							// flush buffer 

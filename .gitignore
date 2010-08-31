@@ -1,5 +1,2 @@
 ww_config/model_functions.php
-ww_files/attachments/*
-ww_files/images/thumbs/*
-ww_files/images/*
 ww_files/**/*

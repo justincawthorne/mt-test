@@ -793,7 +793,7 @@ function insert_favicon($theme = 'default') {
  */
 
 /**
- * show_article_header
+ * show_page_header
  * 
  * 
  * 
@@ -1361,93 +1361,6 @@ function insert_favicon($theme = 'default') {
  * -----------------------------------------------------------------------------
  */
 
-/**
- * build_snippet
- * 
- * 
- * 
- * 
- * 
- * 
- */
-
- 	function build_snippet($title = '', $content = '') {
-		if(empty($content)) {
-			return false;
-		}
-		if( (is_array($content)) && (count($content) < 2) ) {
-			return false;
-		}
-		$current_uri = current_url();
-		// start building
-		$snippet = '
-		<div class="snippet">
-		';
-		// title
-		$snippet .= (!empty($title)) 
-			? '<h6>'.$title.'</h6>' : '' ;
-		// content
-		if(is_array($content)) {
-			$snippet .= '
-			<ul>';
-			foreach($content as $snip) {
-				$current = ($snip['link'] == $current_uri) ? ' class="current"' : '' ;
-				$link_title = (!empty($snip['link_title'])) ? $snip['link_title'] : $snip['title'] ;
-				$snippet .= '
-				<li'.$current.'>';
-				if(isset($snip['total'])) {
-					$snippet .= '
-					<span class="list_item">
-						<a href="'.$snip['link'].'" title="'.$link_title.'">'.$snip['title'].'</a>
-					</span>
-					<span class="list_total">
-						'.$snip['total'].'
-					</span>';
-				} else {
-					$snippet .= '
-					<a href="'.$snip['link'].'" title="'.$link_title.'">'.$snip['title'].'</a>';
-				}
-				// child array
-				if(isset($snip['child'])) {
-					$snippet .= '
-					<ul>';
-					foreach($snip['child'] as $child) {
-						$current = ($child['link'] == $current_uri) ? ' class="current"' : '' ;
-						$link_title = (!empty($child['link_title'])) ? $child['link_title'] : $child['title'] ;
-						$snippet .= '
-						<li'.$current.'>';
-						if(isset($child['total'])) {
-							$snippet .= '
-							<span class="list_item">
-								<a href="'.$child['link'].'" title="'.$link_title.'">'.$child['title'].'</a>
-							</span>
-							<span class="list_total">
-								'.$child['total'].'
-							</span>';
-						} else {
-							$snippet .= '
-							<a href="'.$child['link'].'" title="'.$link_title.'">'.$child['title'].'</a>';
-						}
-						$snippet .= '
-						</li>';
-					}
-					$snippet .= '
-					</ul>';
-				}
-				// end child array
-				$snippet .= '
-				</li>';
-			}
-			$snippet .= '
-			</ul>';
-		} else {
-			$snippet .= $content;
-		}
-		// close wrapper
-		$snippet .= '
-		</div>';
-		return $snippet;
-	}
 	
 /**
  * build_select_form

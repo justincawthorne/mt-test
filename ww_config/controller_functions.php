@@ -88,9 +88,6 @@
 			
 		file retrieval
 		
-			get_folders
-			get_files
-			get_kb_size
 			get_attachment
 			serve_attachment
 	
@@ -458,23 +455,6 @@
 		return false;
 	}
 	
-/**
- * current_url
- * 
- * this will get the URL for whichever page it is called from
- * mainly useful for form actions and page reloads
- * 
- * @return string	$current_url	the url of the current page
- */	
- 
-	function current_url() {
-		// get current url
-		$host = (substr($_SERVER['HTTP_HOST'],0,7) != "http://") 
-			? 'http://'.$_SERVER['HTTP_HOST'] 
-			: $_SERVER['HTTP_HOST'] ;
-		$current_url = $host.$_SERVER["REQUEST_URI"];
-		return $current_url;
-	}
 
 /**
  * -----------------------------------------------------------------------------
@@ -514,33 +494,6 @@
 		return false;	
 	}
 
- /**
- * detect_smartphone
- * 
- * 
- * 
- * 
- * 
- * 
- */
-	
-	function detect_smartphone() {
-		// check for bots
-		$bot_array = array(	'iphone',
-							'ipod',
-							'android',
-							'symbian',
-							'webos');
-		$useragent = (isset($_SERVER['HTTP_USER_AGENT'])) ? strtolower($_SERVER['HTTP_USER_AGENT']) : '' ;
-		$ignore = 0;
-		// if user agent matches any of the bots then we don't count it
-		foreach($bot_array as $bot) {
-			if((!empty($useragent)) && (stripos($useragent, $bot)!== false)) { 
-				return true; 
-			}
-		}
-		return false;			
-	}
 
 /**
  * -----------------------------------------------------------------------------
@@ -861,30 +814,7 @@
 		return $row['title'];
 	}
 
-/**
- * get_category_details
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-	
-	function get_category_details($id) {
-		$id = (int)$id;
-		if(empty($id)) {
-			return false;
-		}
-		$conn = reader_connect();
-		$query = "SELECT category_id, title, url, summary, description, type 
-					FROM categories
-					WHERE id = ".(int)$id;
-		$result = $conn->query($query);
-		$row = $result->fetch_assoc();
-		$result->close();
-		return $row;
-	}
+
 
 /**
  * list_tags
@@ -943,30 +873,7 @@
 		return $row['title'];
 	}
 
-/**
- * get_tag_details
- * 
- * 
- * 
- * 
- * 
- * 
- */	
 
-	function get_tag_details($id) {
-		$id = (int)$id;
-		if(empty($id)) {
-			return false;
-		}
-		$conn = reader_connect();
-		$query = "SELECT title, url, summary
-					FROM tags
-					WHERE id = ".(int)$id;
-		$result = $conn->query($query);
-		$row = $result->fetch_assoc();
-		$result->close();
-		return $row;
-	}
 
 /**
  * list_months
@@ -1273,49 +1180,6 @@
 	}
 
 
-/**
- * get_articles_basic
- * 
- * 
- * 
- * 
- * 
- * 
- */
-
-	function get_articles_basic(	$url_style = 'blog',
-									$where = '', 
-									$order = 'date_uploaded DESC', 
-									$limit = '10'
-								) {
-		$conn = reader_connect();
-		$query = "SELECT
-					articles.id, 
-				 	articles.title, 
-					articles.url, 
-					articles.date_uploaded, 
-					categories.url AS category_url
-				FROM articles 
-					LEFT JOIN categories ON articles.category_id = categories.id 
-				WHERE status = 'P'
-					AND date_uploaded <= NOW()";
-		$query .= (!empty($where)) ? ' AND '.$where : '' ;
-		$query .= ' ORDER BY '.$order;
-		$query .= (!empty($limit)) ? ' LIMIT 0,'.$limit : '' ;
-		$result = $conn->query($query);
-		$data = array();
-		while($row = $result->fetch_assoc()) { 
-			$row = stripslashes_deep($row);
-			// create links
-			$link = ($url_style == 'blog') 
-				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($row['date_uploaded'])).'/'.$row['url'].'/'
-				: WW_REAL_WEB_ROOT.'/'.$row['category_url'].'/'.$row['url'].'/';
-			$row['link'] = $link;
-			$data[] = $row;
-		}
-		$result->close();
-		return $data;		
-	}
 	
 /**
  * list_podcasts
@@ -1471,41 +1335,6 @@
 			$row['comments'] = (!empty($comments)) ? $comments : '' ;
 		}
 		return $row;	
-	}
-
-	
-
-/**
- * get_article_attachments
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-
-	function get_article_attachments($id) {
-		if(empty($id)) {
-			return false;
-		}
-		$conn = reader_connect();
-		$query = "SELECT 
-					attachments.id, attachments.title, attachments.filename,
-					attachments.ext, attachments.size, attachments.mime
-				FROM attachments_map
-					LEFT JOIN attachments ON attachments.id = attachments_map.attachment_id
-				WHERE article_id = ".(int)$id;
-		$result = $conn->query($query);
-		$data = array();
-		while($row = $result->fetch_assoc()) { 
-			$row['itunes_link'] = WW_WEB_ROOT.'/download/'.$row['ext'].'/'.$row['filename'];
-			$row['file_link'] = WW_WEB_ROOT.'/ww_files/attachments/'.$row['ext'].'/'.$row['filename'];
-			$row['link'] = WW_WEB_ROOT.'/download/'.$row['id'].'/';
-			$data[] = $row;
-		}
-		return $data;		
 	}
 
 /**
@@ -1957,24 +1786,6 @@
 		return $string;	
 	}
 
-/**
- * from_mysql_date
- * 
- * takes a mysql date (or any date in string format) and converts to a readable format
- *
- * @param 	string	$mydate		the mysql date
- * @param	strong	$format		the selected format
- * @return	string	$date		the formatted date string
- */
-	
-	function from_mysql_date($mydate, $format = 'd M Y \a\t H:i') {
-		$ts = strtotime($mydate);
-		if(empty($ts)) {
-			return 'not published';
-		}
-		$date = date($format, $ts);
-		return $date;
-	}
 
 /**
  * prepare_string
@@ -1995,26 +1806,6 @@
 		return $string;			
 	}
 	
-/**
- * clean_input
- *
- * function to clean up text entered in comments
- * optionally strips all html out
- * converts appropriate characters to entities
- * trims whitespace
- *
- * @param	string	$value	Input string
- * @param 	bool	$html	0 to strip html, 1 to leave html in
- *
- * @return	string	$value	Safe input
-*/
-
-	function clean_input($string, $html = 0) {
-		$string = (empty($html)) ? strip_tags($string) : $string ;
-		$string = htmlentities($string,ENT_QUOTES);
-		$string = trim($string);
-		return $string;
-	}
 
 /**
  * count_words
@@ -2129,87 +1920,6 @@
  * -----------------------------------------------------------------------------
  */
 
- /**
- * get_folders
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-	function get_folders($dir) {
-		$handle = opendir($dir);
-		$folder_array = array();
-		while (false !== ($file = readdir($handle))) {
-			if ( (is_dir($dir."/".$file)) && ($file != ".") && ($file != "..") ) {
-				$folder_array[] = $file;
-			}
-		}
-		return $folder_array;
-	}
- 
- /**
- * get_files
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-	function get_files($folder, $ext_type = '') {
-		if( (empty($folder)) || (!is_dir($folder)) ) {
-			return false;
-		}
-		// folder path
-		$dir = str_replace(WW_REAL_WEB_ROOT,WW_ROOT,$folder);
-		$handle = opendir($dir);
-		$file_data = array();
-		while (false !== ($file = readdir($handle))) {
-			//if (!is_dir("$dir/$file")) {
-			if (!is_dir($dir."/".$file)) {
-				// read file details into array
-				$name = $file;
-				$path = pathinfo($file);
-				$ext = $path['extension'];
-				if( (!empty($ext_type)) && ($ext != $ext_type) ) {
-					continue;
-				}
-				$date = filemtime($dir.$file);
-				$size = filesize($dir.$file);
-				$file_data[] = array(
-								'path'		=> $dir,
-								'link'		=> str_replace(WW_ROOT,WW_REAL_WEB_ROOT,$dir).$name,
-								'filename' 	=> $name,
-								'size' 		=> $size,
-								'ext' 		=> $ext,
-								'date_uploaded' => $date
-								);					
-
-
-			}
-		}
-		return $file_data;
-	}
-
- /**
- * get_kb_size
- * 
- * 
- * 
- * 
- * 
- * 
- */
-
-	function get_kb_size($bytes) {
-		$kbsize = $bytes/1024;
-		$kbsize = round($kbsize, 2);
-		return $kbsize;		
-	}
 
 /**
  * get_attachment

@@ -435,6 +435,8 @@
 				<textarea name="credit" cols="24" rows="2"><?php echo $image['credit'];?></textarea>
 			</p>
 			<p>	
+				<input name="ext" type="hidden" value="<?php echo $image['ext'];?>" />
+				<input name="mime" type="hidden" value="<?php echo $image['mime'];?>" />
 				<input name="filename" type="hidden" value="<?php echo $image['filename'];?>" />
 				<input type="submit" name="submit" class="button" value="Save Changes" />
 			</p>

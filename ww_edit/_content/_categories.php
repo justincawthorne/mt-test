@@ -4,6 +4,50 @@
 
 	$page_title = 'Categories';
 
+// process post actions
+	
+	// insert category
+
+	if( (isset($_POST['add_category'])) && ($_POST['add_category'] == 'add') ) {
+
+		$insert_status = insert_category();
+		if(is_int($insert_status)) {
+			$reload = $_SERVER["PHP_SELF"].'?page_name=categories&category_id='.$new_category_id;
+			header('Location: '.$reload);			
+		} else {
+			$insert_error = $insert_status;
+		}
+		
+	}
+	
+	// edit category
+
+	if( (isset($_POST['edit_category'])) && ($_POST['edit_category'] == 'edit') ) {
+
+		$category_id = (int)$_GET['category_id'];
+		$update_status = update_category($category_id);
+		if($update_status === true) {
+			header('Location: '.$url);
+		} else {
+			$error = $update_status;
+		}
+		
+	}
+
+	// delete category
+	
+	if( (isset($_POST['confirm_delete_category'])) && ($_POST['confirm_delete_category'] == 'Yes') ) {
+		
+		$category_id = (int)$_GET['category_id'];
+		$delete_status = delete_category($category_id);
+		if($delete_status === true) {
+			$reload = $_SERVER["PHP_SELF"].'?page_name=categories';
+			header('Location: '.$reload);
+		} else {
+			$error = $delete_status;
+		}
+	}
+	
 	// category list
 	
 	$categories_list = get_categories_admin();
@@ -24,43 +68,29 @@
 	}
 
 
-	// insert category
 
-	if( (isset($_POST['add_category'])) && ($_POST['add_category'] == 'Add') ) {
-
-		$insert_category_id = insert_category();
-		$new_category_id = (int)$insert_category_id;
-		if(!empty($new_category_id)) {
-			$reload = $_SERVER["PHP_SELF"].'?page_name=categories&category_id='.$new_category_id;
-			header('Location: '.$reload);			
-		}
-		
-	}	
 
 
 	// show category details if requested
 	
 	if(!empty($category_id)) {
 
-		// edit category
-
-		if( (isset($_POST['edit_category'])) && ($_POST['edit_category'] == 'Edit') ) {
-
-			update_category($category_id);
-			$reload = $_SERVER["PHP_SELF"].'?page_name=categories&category_id='.$category_id;
-			header('Location: '.$reload);
-			
-		}
-	
-		// delete category
+	// confirm file delete
 		
-		if( (isset($_POST['delete_category'])) && ($_POST['delete_category'] == 'Delete') ) {
-			
-			delete_category($category_id);
-			$reload = $_SERVER["PHP_SELF"].'?page_name=categories';
-			header('Location: '.$reload);
+		if( (isset($_GET['action'])) && ($_GET['action'] == 'delete') ) {
+
+			$main_content .= '
+				<h2>Are you sure you want to delete this category?</h2>
+				<form action="'.$action_url.'" method="post" name="confirm_delete_category_form">
+					<input name="confirm_delete_category" type="submit" value="Yes"/>
+					<input name="cancel_delete_category" type="submit" value="No" />
+				</form>
+				<hr />
+				';
 			
 		}
+
+
 		
 		// get category details
 		
@@ -124,11 +154,12 @@
 				<p>
 					<label for="summary">Summary (optional)</label>
 					<textarea name="summary" id="summary" cols="21" rows="3">'.$category['summary'].'</textarea>
+					<span class="note">brief optional summary to show on listings page and at the head of the rss feed for this category</span>
 				</p>
 				<p>
 					<label for="description">Description (optional)</label>
 					<textarea name="description" id="description" cols="21" rows="3">'.$category['description'].'</textarea>
-					<span class="note">only used for podcast/rss feeds</span>
+					<span class="note">longer description only used for podcast/rss feeds</span>
 				</p>
 				<p>
 					<label for="type">Type</label>
@@ -136,21 +167,29 @@
 					<span class="note">iTunes category for podcasts</span>
 				</p>
 				<p>
-					<input name="edit_category" value="Edit" type="submit"/>
-				</p>';
-			if(!empty($usage)) {
-				$page_content .= '
-				<p>You cannot delete this category while there are articles using it.</p>
+					<input name="edit_category" value="edit" type="submit"/>
+				</p>
+				</form';
+				
+	// delete category form	
+	
+		if(!empty($usage)) {
+			
+			$main_content .= '
+				<hr />
+				<h4>delete category</h4>
+				
+				<form action="'.$action_url.'" method="get" id="delete_category_form">
+					<p>
+						<span class="note">
+						<input type="hidden" name="page_name" value="categories"/>
+						<input type="hidden" name="category_id" value="'.$category_id.'"/>
+						<input name="action" type="submit" value="delete"/>
+						</span>
+					</p>
 				</form>
 				';
-			} else {
-				$page_content .= '
-				<p>or</p>
-				<p>
-					<input name="delete_category" value="Delete" class="delete_button" type="submit"/>
-				</p>
-				</form>
-				';				
+			
 			}		
 				
 		} else {
@@ -167,7 +206,9 @@
 	
 	// category edit form
 
-	$add_category_form = '
+	$add_category_form = ( (isset($insert_error)) && (!empty($insert_error)) ) ? '<p><strong>'.$insert_error.'</strong></p>' : '';
+
+	$add_category_form .= '
 				<form action="'.$_SERVER["PHP_SELF"].'?page_name=categories" method="post" id="add_category_form">
 				<p>
 					<label for="title">Category title</label>
@@ -190,7 +231,7 @@
 					<textarea name="summary" cols="21" rows="3"></textarea>
 				</p>
 				<p>
-					<input name="add_category" value="Add" type="submit"/>
+					<input name="add_category" value="add" type="submit"/>
 				</p>
 				</form>
 	';

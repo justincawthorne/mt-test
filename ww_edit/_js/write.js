@@ -74,7 +74,8 @@
 			new_attachment += '<input type="checkbox" name="attachments[' + select_val + ']" ';
 			new_attachment += 'id="attachments[' + select_val + ']" value="' + select_val + '" checked="checked"/>';
 			new_attachment += select_text + '</label></li>';
-			alert(new_attachment);
+			// remove no attachment input placeholder
+			$('input[name=no_attachments]').hide();
 			// add to attachments list
 			$('ul#attachments').append(new_attachment);
 		});

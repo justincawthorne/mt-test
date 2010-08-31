@@ -4,25 +4,113 @@
 
 	$page_title = 'Attachments';
 
-	$url = current_url();
+// upload attachment
+	
+	if( (isset($_POST['upload_attachment'])) && ($_POST['upload_attachment'] == 'upload') ) {
+		
+		$upload_status = insert_attachment();
+		if(is_int($upload_status)) {
+			header('Location: '.$_SERVER["PHP_SELF"].'?page_name=attachments&attachment_id='.$upload_status);
+		} else {
+			$error = $upload_status;
+		}
+		
+	}
+	
+// update attachment details
 
-// insert a new attachment
+	if( (isset($_POST['update'])) && ($_POST['update'] == 'update details') ) {
+		
+		$attachment_id = (int)$_POST['attachment_id'];
+		if(!empty($attachment_id)) {
+			$update_status = update_attachment($attachment_id);
+			if($update_status == true) {
+				header('Location: '.$url);
+			} else {
+				$error = $update_status;
+			}			
+		}
+	
+	}
 
-// edit an attachment
+// insert attachment details -  for rogue attachments
 
-// replace an attachment
+	if( (isset($_POST['insert'])) && ($_POST['insert'] == 'insert details') ) {
+		
+		$insert_status = insert_attachment_details($_POST);
+		if(is_int($insert_status)) {
+			header('Location: '.$_SERVER["PHP_SELF"].'?page_name=attachments&attachment_id='.$insert_status);
+		} else {
+			$error = $insert_status;
+		}			
+	}
+	
+// replace attachment
 
-// delete an attachment
+	if(isset($_POST['replace_attachment'])) {
+		
+		if( (isset($_FILES['new_attachment'])) && (empty($_FILES['new_attachment']['error'])) ) {
+			// current file details
+			$current 	= $_POST['current_attachment'];
+			$current_path = pathinfo($current);
+			$current_ext = $current_path['extension'];
+			// location
+			$location 	= WW_ROOT.'/ww_files/attachments/'.$current_ext.'/';
+			// new file details
+			$new_file	= $_FILES['new_attachment'];
+			$replace_status = replace_attachment($location, $new_file, $current);
+			if($replace_status === true) {
+				header('Location: '.$url);
+			} else {
+				$error = $replace_status;
+			}
+		}
+		
+	}
+	
+// confirm delete attachment
+	
+	if( (isset($_POST['confirm_delete_attachment'])) && ($_POST['confirm_delete_attachment'] == 'Yes') ) {
+
+		$attachment_delete = delete_attachment($_POST['filename'],$_POST['ext']);
+		
+		if(!empty($attachment_delete)) {
+			header('Location: '.WW_WEB_ROOT.'/ww_edit/index.php?page_name=attachments');
+		} else {
+			$error = $attachment_delete;
+		}
+
+	}
+
+// delete folder
+
+	if(isset($_POST['remove_folder'])) {
+		
+		if(!empty($_GET['ext'])) {
+			$rm_folder = WW_ROOT.'/ww_files/attachments/'.$_GET['ext'].'/';
+			rmdir($rm_folder);	
+			header('Location: '.WW_WEB_ROOT.'/ww_edit/index.php?page_name=attachments');		
+		}
+
+	}
 	
 
 // process our params and get main content
 
-	if(isset($_GET['attachment_id'])) {
+	$attachment_id = (isset($_GET['attachment_id'])) ? (int)$_GET['attachment_id'] : 0 ;
+	
+	if(isset($_GET['filename'])) {
+		$filepath = WW_ROOT.'/ww_files/attachments/'.$_GET['filename'].'/'.$_GET['filename'];
+		if(file_exists($filepath)) {
+			$filename = $_GET['filename'];
+		}
+	}
+	
+// a single attachment
 		
-		// a single attachment
+	if(!empty($attachment_id)) {
 		
-		$attachment_id = (int)$_GET['attachment_id'];
-		$attachment = get_attachment_full($attachment_id);
+		$attachment = get_attachment($attachment_id);
 		
 		// file usage
 		
@@ -38,22 +126,21 @@
 		
 		// this is a rogue file
 		$rogue_path = WW_ROOT.'/ww_files/attachments/'.$_GET['ext'].'/'.$_GET['filename'];
-		if(file_exists($rogue_path)) {
-			$attachment = array();
-			$attachment['title'] 	= $_GET['filename'];
-			$attachment['filename'] = $_GET['filename'];
-			$attachment['ext'] 		= $_GET['ext'];
-			$attachment['size'] 	= filesize($rogue_path);
-			$attachment['date_uploaded'] = filemtime($rogue_path);
-		}
 		
-	} 
-	
+		$attachment = get_file_details($rogue_path);
+		$attachment['src'] = WW_WEB_ROOT.'/ww_files/attachments/'.$_GET['ext'].'/'.$_GET['filename'];
+		
+		// file usage
+		
+		$usage = attachment_usage($attachment_id);
+		
+	} else {
+		
 	// if no single attachment is found/requested we return a list
-	
-	if( (!isset($attachment)) || (empty($attachment)) ) {
-		
+
 		$attachments = get_attachments();
+		
+		// get total attachments and total pages
 		
 		// check for rogues and orphans
 		
@@ -70,30 +157,28 @@
 	}
 	
 	
-	
-	
-	// any content generation
-	
-	$attachment_folders = get_folders(WW_ROOT."/ww_files/attachments");
-	// files link
-	$left_text = '<a href="'.$_SERVER["PHP_SELF"].'?page_name=files">files</a>: ';
+// construct page header
+
+	$left_text = '<a href="'.$_SERVER["PHP_SELF"].'?page_name=files">files</a>';
 	// attachments link
-	$left_text .= '<a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">attachments</a>';
+	
 	// extension / optional link
 	if(isset($attachments)) {
-		$left_text .= (isset($_GET['ext'])) ? ': '.$_GET['ext'] : '' ;
+		
+		if(isset($_GET['ext'])) {
+			$left_text .= ': <a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">attachments</a>';
+			$left_text .= ': '.$_GET['ext'];
+		} else {
+			$left_text .= ': attachments';
+		}
+		
 	} else {
+		$left_text .= ': <a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">attachments</a>';
 		$left_text .= ': <a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments&amp;ext='.$attachment['ext'].'">'.$attachment['ext'].'</a>';
 	}
 	$right_text = (isset($attachment)) ? $attachment['filename'] : 'listing' ;
 	$page_header = show_page_header($left_text, $right_text);
 
-
-// get aside content
-
-	// any functions
-	
-	// any content generation
 
 
 // output main content - into $main_content variable
@@ -105,7 +190,8 @@
 			$current_folder = (isset($_GET['ext'])) ? '/ww_files/attachments/'.$_GET['ext'] : '/ww_files/attachments/' ;
 			$link_path = $_SERVER["PHP_SELF"].'?page_name=attachments&amp;ext='.$_GET['ext'].'&amp;filename=';
 			$main_content .= 
-			'<h4>rogue files</h4>
+			'
+			<h4>rogue files</h4>
 			<p>The following rogue files were found in the <em>'.$current_folder.'</em> folder (you can either destroy these without mercy or add them to the database - click on the filename to take action):
 				<ul>';
 			foreach($orphans['files'] as $orphan) {
@@ -121,24 +207,84 @@
 			';
 		}
 		if(isset($orphans['db'])) {
-			$main_content .= 
-			'<h4>orphaned database entries</h4>
+			$main_content .=  '
+			<h4>orphaned database entries</h4>
 			<p>There are orphaned entries in the database (too sad!). They are highlighted below - you should either delete these pitiful entries or re-upload the files.</p>';
 		}
 	}
 	
 	if(isset($attachments)) {
-		$main_content .= build_file_listing($attachments);
+		
+		if(empty($attachments)) {
+			$main_content .= '
+			<h4>Oh noes - this appears to be an empty folder! Would you like to delete it?</h4>
+			
+			<form action="'.$action_url.'" method="post" id="delete_folder_form">
+				<p>
+					<span class="note">
+					<input name="remove_folder" type="submit" value="yes - make this an ex-folder"/>
+					</span>
+				</p>
+			</form>
+			';
+		} else {
+			
+			$main_content .= build_file_listing($attachments);
+		}
+		
 	} else {
+
+	// confirm file delete
+		
+		if( (isset($_GET['action'])) && ($_GET['action'] == 'delete') ) {
+
+			$main_content .= '
+				<h2>Are you sure you want to delete this attachment?</h2>
+				<form action="'.$action_url.'" method="post" name="confirm_delete_attachment_form">
+					<input name="filename" type="hidden" value="'.$attachment['filename'].'"/>
+					<input name="ext" type="hidden" value="'.$attachment['ext'].'"/>
+					<input name="confirm_delete_attachment" type="submit" value="Yes"/>
+					<input name="cancel_delete_attachment" type="submit" value="No" />
+				</form>
+				';
+			
+		}
+		
+	// jump options:
+		
+		$main_content .= '
+		<p><strong> Jump to:</strong>
+			<a href="#usage">attachment usage</a> &#124;
+			<a href="#replace">replace attachment</a> &#124;
+			<a href="#delete">delete attachment</a>
+		</p>';
+		
+	// show errors
+	
+		if( (isset($error)) && (!empty($error)) ) {
+			$main_content .= '
+			<p><strong>'.$error.'</strong></p>';
+		}
+		
+		if(!file_exists(WW_ROOT.'/ww_files/attachments/'.$attachment['ext'].'/'.$attachment['filename'])) {
+			$main_content .= '
+			<p><strong>File missing!</strong> This attachment cannot be found in the attachments/'.$attachment['ext'].' folder - it will either need to be replaced or deleted from the database</p>';
+		}
 		
 		// main attachment details
 		
 		$mime_edit = (!empty($attachment['mime'])) ? ' readonly="readonly"' : '' ;
+		$ext_edit = (!empty($attachment['ext'])) ? ' readonly="readonly"' : '' ;
+		
+		$summary = (isset($attachment['summary'])) ? $attachment['summary'] : '' ;
+		$downloads = (isset($attachment['downloads'])) ? $attachment['downloads'] : 0 ;
+		
 		$main_content .= '
+			<hr />
 			<h4>file details</h4>
 			
 			<p>This file was uploaded by '.$attachment['author_name'].' on '.from_mysql_date($attachment['date_uploaded']).' &#124; 
-			<a href="'.$attachment['link'].'">download</a></p>
+			<a href="'.$attachment['src'].'">download</a></p>
 			<form id="attachment_details" method="post" action="'.$url.'">
 				<p>
 					<label for="title">Title</label>
@@ -146,11 +292,15 @@
 				</p>
 				<p>
 					<label for="summary">Description</label>
-					<textarea name="summary">'.$attachment['summary'].'</textarea>
+					<textarea name="summary">'.$summary.'</textarea>
 				</p>
 				<p>
 					<label for="filename">Filename</label>
 					<input type="text" name="filename" value="'.$attachment['filename'].'" readonly="readonly"/>
+				</p>
+				<p>
+					<label for="ext">Extension</label>
+					<input type="text" name="ext" value="'.$attachment['ext'].'"'.$ext_edit.'/>
 				</p>
 				<p>
 					<label for="mime">Mime type</label>
@@ -162,12 +312,18 @@
 				</p>
 				<p>
 					<label for="downloads">Downloads</label>
-					<input type="text" name="downloads" value="'.$attachment['downloads'].'" readonly="readonly"/>
+					<input type="text" name="downloads" value="'.$downloads.'" readonly="readonly"/>
 				</p>
 				<p>
 					<span class="note">
-					<input type="submit" name="update" value="update details" />
-					</span>
+					<input type="hidden" name="attachment_id" value="'.$attachment['id'].'" />';
+				if(empty($attachment['id'])) {
+					$main_content .= '<input type="submit" name="insert" value="insert details" />';
+				} else {
+					$main_content .= '<input type="submit" name="update" value="update details" />';
+				}
+				$main_content .= '
+				</span>
 				</p>
 			</form>';
 			
@@ -175,7 +331,8 @@
 		
 		$main_content .= '	
 			<hr />
-			<h4>usage</h4>';
+			
+			<h4><a id="usage"></a>usage</h4>';
 			$usage_total = count($usage);
 			$article_link = $_SERVER["PHP_SELF"].'?page_name=write&amp;article_id=';
 			switch($usage_total) {
@@ -203,23 +360,54 @@
 				break;
 			}
 
+	// form to replace thumbnail image
+		
+		$main_content .= '		
+			<hr />
+				
+			<h4><a id="replace"></a>replace attachment</h4>
+
+			<form action="'.$action_url.'" method="post" enctype="multipart/form-data" id="attachment_replace_form">
+				<p>
+					<label for="new_attachment">New file:</label>
+					<input name="new_attachment" id="new_attachment" type="file"/>
+				</p>
+				<p>
+					<span class="note">
+					<input name="current_attachment" type="hidden" value="'.$attachment['filename'].'"/>
+					<input type="submit" name="replace_attachment" value="replace" />
+					</span>
+				</p>
+			</form>
+
+			';
+
+
+	// button to delete file
 			
 		$main_content .= '
-			<h4>replace file</h4>';
+			<hr />
+			<h4><a id="delete"></a>delete attachment</h4>';
+		
+		if(!empty($usage)) {
 			
+			$main_content .= '
+			<p>NOTE: this will also remove this file from the articles it is currently attached to...</p>';
+		}
+		
 		$main_content .= '
-			<h4>delete file</h4>';
+			<form action="'.$action_url.'" method="get" id="delete_attachment_form">
+				<p>
+					<span class="note">
+					<input type="hidden" name="page_name" value="attachments"/>
+					<input type="hidden" name="attachment_id" value="'.$attachment['id'].'"/>
+					<input name="action" type="submit" value="delete"/>
+					</span>
+				</p>
+			</form>
+			';
+
 	}
-	
-	// if file selected then show:
-	
-		// file details
-		
-		// file usages (i.e. which articles is it attached to)
-		
-		// replace file
-		
-		// delete file
 
 // output aside content - into $aside_content variable
 
@@ -231,6 +419,8 @@
 			</ul>';
 
 	// attachment subfolders
+	
+	$attachment_folders = get_folders(WW_ROOT."/ww_files/attachments");
 	
 	if(!empty($attachment_folders)) {
 		
@@ -267,13 +457,13 @@
 			<p><label for="attachment_file">Select file</label>
 				<input name="attachment_file" type="file" size="12" id="attachment_file"/></p>
 			
-			<p><label for="title">Image title (optional)</label> 
+			<p><label for="title">Attachment title (optional)</label> 
 				<input name="title" type="text" name="title" size="24"/></p>
 			
 			<p><label for="summary">Description (optional)</label> 
 				<textarea name="summary"></textarea></p>
 			<p>			
-				<input type="submit" name="upload_image" value="upload" /></p>
+				<input type="submit" name="upload_attachment" value="upload" /></p>
 		</form>
 	</div>';
 ?>

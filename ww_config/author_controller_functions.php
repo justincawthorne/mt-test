@@ -99,7 +99,7 @@
 
 /*
  * -----------------------------------------------------------------------------
- * INITIAL FUNCTIONS
+ * GENERAL FUNCTIONS
  * -----------------------------------------------------------------------------
  */
  
@@ -130,6 +130,14 @@
 	}
 
 
+
+
+/*
+ * -----------------------------------------------------------------------------
+ * FRONT
+ * -----------------------------------------------------------------------------
+ */
+ 
 /**
  * define_article_status
  * 
@@ -148,13 +156,6 @@
 		$status['W'] = 'withdrawn';
 		return $status;
 	}
-
-
-/*
- * -----------------------------------------------------------------------------
- * STATS
- * -----------------------------------------------------------------------------
- */
 
 /**
  * get_articles_status
@@ -235,7 +236,7 @@
 	}
 
 /**
- * admin_comment_stats
+ * get_comments_stats
  * 
  * 
  * 
@@ -322,7 +323,7 @@
 
 
 /**
- * list_articles
+ * get_articles_admin
  * 
  * 
  * 
@@ -487,7 +488,7 @@
 	}
 
 /**
- * list_admin_authors
+ * get_authors_admin
  * 
  * 
  * 
@@ -532,7 +533,21 @@
 	}
 
 /**
- * list_admin_categories
+ * get_dates_admin
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_dates_admin($filter = 0) {
+		
+	}
+
+/**
+ * get_categories_admin
  * 
  * 
  * 
@@ -583,7 +598,7 @@
 
 
 /**
- * list_tags
+ * get_tags_admin
  * 
  * 
  * 
@@ -628,12 +643,12 @@
 
 /**
  * -----------------------------------------------------------------------------
- * ARTICLE DATA RETRIEVAL
+ * ARTICLE (SINGLE)
  * -----------------------------------------------------------------------------
  */
 
 /**
- * admin_get_article
+ * get_article_admin
  * 
  * 
  * 
@@ -657,6 +672,7 @@
 		$result = $conn->query($query);
 		$comment_result = $conn->query($comment_query);
 		$row = $result->fetch_assoc();
+		$row = stripslashes_deep($row);
 		$comments = $comment_result->fetch_assoc();
 		$row['comment_count'] = $comments['total'];
 		return $row;
@@ -718,21 +734,6 @@
 	}
 
 /**
- * get_article_attachments_admin
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-
-	function get_article_attachments_admin($article_id) {
-		
-	}
-
-/**
  * get_article_tags_admin
  * 
  * 
@@ -769,7 +770,7 @@
  * 
  * 
  */	
-
+/*
 	function get_article_comments_admin($article_id) {
 		if(empty($article_id)) {
 			return false;
@@ -788,15 +789,15 @@
 		}
 		return $data;		
 	}
-
+*/
 /**
  * -----------------------------------------------------------------------------
- * ARTICLE DATA INSERT
+ * ARTICLE INSERT
  * -----------------------------------------------------------------------------
  */
 
 /**
- * get_article_data
+ * get_article_form_data
  * 
  * 
  * 
@@ -950,7 +951,12 @@
 		$article_data['comments_disable'] = ( (isset($_POST['comments_disable'])) && (!empty($_POST['comments_disable'])) ) ? 1 : 0 ;
 
 		// tags
-		$article_data['tags'] = ( (isset($_POST['tags'])) && (!empty($_POST['tags'])) ) ? $_POST['tags'] : array() ;
+		$article_data['tags'] = ( (isset($_POST['tags'])) && (!empty($_POST['tags'])) ) 
+			? $_POST['tags'] : array() ;
+		
+		// attachments
+		$article_data['attachments'] = ( (isset($_POST['attachments'])) && (!empty($_POST['attachments'])) ) 
+			? $_POST['attachments'] : array() ;
 		
 		// tag new
 		if(!empty($_POST['tag_new'])) {
@@ -973,7 +979,7 @@
 	}
 
 /**
- * insert_article_data
+ * insert_article
  * 
  * 
  * 
@@ -1022,6 +1028,10 @@
 			if(!empty($post_data['tags'])) {
 				update_article_tags($new_id, $post_data['tags']);
 			}
+		// update tags_map table
+			if(!empty($post_data['attachments'])) {
+				update_article_attachments($new_id, $post_data['attachments']);
+			}
 		// update attachments_map table
 			return $result;	
 		}
@@ -1069,9 +1079,13 @@
 			$result['category_id'] = $post_data['category_id'];
 			$result['date_uploaded'] = $post_data['date_uploaded'];
 			// update tags_map table
-			if(!empty($post_data['tags'])) {
+			//if(!empty($post_data['tags'])) {
 				update_article_tags($post_data['id'], $post_data['tags']);
-			}
+			//}
+			// update tags_map table
+			//if(!empty($post_data['attachments'])) {
+				update_article_attachments($post_data['id'], $post_data['attachments']);
+			//}
 			return $result;
 		// update attachments_map table			
 		}
@@ -1089,7 +1103,26 @@
  */	
  	
 	function update_article_attachments($article_id, $attachments_array) {
-		
+		if(empty($article_id)) {
+			return array();
+		}
+		$conn = author_connect();
+		// easiest to delete current tags for this article first
+		$delete = 'DELETE FROM attachments_map 
+					WHERE article_id = '.(int)$article_id;
+		$conn->query($delete);
+		// now insert all the new tags
+		if(!empty($attachments_array)) {
+			foreach($attachments_array as $attachment => $attachment_id) {
+				$insert = '
+				INSERT INTO attachments_map 
+				(article_id, attachment_id)
+				VALUES
+				('.(int)$article_id.','.(int)$attachment_id.')';
+				$conn->query($insert);
+			}
+		}
+		return true;		
 	}
 	
 /**
@@ -1154,7 +1187,13 @@
 	}
 
 /**
- * create_url_title
+ * -----------------------------------------------------------------------------
+ * STRING PROCESSING
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * prepare_article_body
  * 
  * a few functions to get the article body ready for posting
  * 
@@ -1316,6 +1355,20 @@
 	}
 
  /**
+ * get_comment
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_comment() {
+		
+	}
+
+ /**
  * get_commented_articles
  * 
  * 
@@ -1356,41 +1409,17 @@
 		$result->close();
 		return $data;
 	}
-	
-	function approve_comment($comment_id, $disapprove = 0) {
-		$comment_id = (int)$comment_id;
-		if(empty($comment_id)) {
-			return false;
-		}
-		$approved = (empty($disapprove)) ? 1 : 0 ;
-		$conn = author_connect();
-		$query = "UPDATE comments SET approved = ".$approved."
-					WHERE id = ".$comment_id;
-		$result = $conn->query($query);
-		if(!$result) {
-			return $conn->error;
-		} else {
-			$url = current_url();
-			header('Location: '.$url);
-		}
-	}
-	
-	function delete_comment($comment_id) {
-		$comment_id = (int)$comment_id;
-		if(empty($comment_id)) {
-			echo 'no id';
-			return false;
-		}
-		$conn = author_connect();
-		$query = "DELETE FROM comments WHERE id = ".$comment_id;
-		$result = $conn->query($query);
-		if(!$result) {
-			return false;
-		} else {
-			return true;
-		}		
-	}
-	
+
+ /**
+ * insert_comment_admin
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
 	function insert_comment_admin() {
 		$conn = author_connect();
 		$query = "	INSERT INTO comments
@@ -1421,6 +1450,62 @@
 		}
 	}
 
+ /**
+ * approve_comment
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function approve_comment($comment_id, $disapprove = 0) {
+		$comment_id = (int)$comment_id;
+		if(empty($comment_id)) {
+			return false;
+		}
+		$approved = (empty($disapprove)) ? 1 : 0 ;
+		$conn = author_connect();
+		$query = "UPDATE comments SET approved = ".$approved."
+					WHERE id = ".$comment_id;
+		$result = $conn->query($query);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			$url = current_url();
+			header('Location: '.$url);
+		}
+	}
+
+ /**
+ * delete_comment
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function delete_comment($comment_id) {
+		$comment_id = (int)$comment_id;
+		if(empty($comment_id)) {
+			echo 'no id';
+			return false;
+		}
+		$conn = author_connect();
+		$query = "DELETE FROM comments WHERE id = ".$comment_id;
+		$result = $conn->query($query);
+		if(!$result) {
+			return false;
+		} else {
+			return true;
+		}		
+	}
+	
+
+
 /*
  * -----------------------------------------------------------------------------
  * AUTHOR UPDATE/INSERT/DELETE
@@ -1429,7 +1514,7 @@
 
 
  /**
- * admin_get_author_details
+ * get_author
  * 
  * 
  * 
@@ -1457,7 +1542,7 @@
 	}
 
 /**
- * create_url_title
+ * insert_author
  * 
  * 
  * 
@@ -1471,7 +1556,7 @@
 	}
 	
 /**
- * create_url_title
+ * update_author
  * 
  * 
  * 
@@ -1525,9 +1610,13 @@
 					(title, url)
 					VALUES 
 					('".$category_title."','".$category_url."')";				
-		$conn->query($insert);
-		$new_id = $conn->insert_id;
-		return $new_id;			
+		$result = $conn->query($insert);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			$new_id = $conn->insert_id;
+			return $new_id;
+		}		
 	}
 
 /**
@@ -1562,9 +1651,13 @@
 					'".$conn->real_escape_string($description)."',
 					'".$conn->real_escape_string($type)."'
 					)";
-		$conn->query($insert);
-		$new_id = $conn->insert_id;
-		return $new_id;			
+		$result = $conn->query($insert);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			$new_id = $conn->insert_id;
+			return $new_id;
+		}		
 	}
 
 /**
@@ -1597,9 +1690,12 @@
 					description = '".$conn->real_escape_string($description)."'.
 					type = '".$conn->real_escape_string($type)."'
 					WHERE id = ".(int)$category_id;
-		echo $query;
-		$conn->query($query);
-		return $category_id;		
+		$result = $conn->query($query);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			return true;
+		}		
 	}
 
 /**
@@ -1613,7 +1709,18 @@
  */	
 	
 	function delete_category($category_id) {
-		
+		if(empty($category_id)) {
+			return false;
+		}
+		$conn = author_connect();
+		// delete tag
+		$delete = "DELETE FROM categories WHERE id = ".(int)$category_id;
+		$result = $conn->query($delete);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			return true;
+		}		
 	}
 
 /*
@@ -1678,9 +1785,13 @@
 					('".$conn->real_escape_string($title)."',
 					'".$conn->real_escape_string($url)."',
 					'".$conn->real_escape_string($summary)."')";
-		$conn->query($insert);
-		$new_tag_id = $conn->insert_id;
-		return $new_tag_id;
+		$result = $conn->query($insert);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			$new_tag_id = $conn->insert_id;
+			return $new_tag_id;
+		}
 	}
 
 /**
@@ -1707,8 +1818,12 @@
 					url = '".$conn->real_escape_string($url)."',
 					summary = '".$conn->real_escape_string($summary)."'
 					WHERE id = ".(int)$tag_id;
-		$conn->query($query);
-		return $tag_id;		
+		$result = $conn->query($query);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			return true;
+		}		
 	}
 
 /**
@@ -1728,11 +1843,18 @@
 		$conn = author_connect();
 		// delete tag
 		$delete = "DELETE FROM tags WHERE id = ".(int)$tag_id;
-		$conn->query($delete);
+		$result = $conn->query($delete);
+		if(!$result) {
+			return $conn->error;
+		}
 		// clean tags map
 		$clean = "DELETE FROM tags_map WHERE tag_id = ".(int)$tag_id;
-		$conn->query($clean);
-		return true;	
+		$result_c = $conn->query($clean);
+		if(!$result_c) {
+			return $conn->error;
+		} else {
+			return true;
+		}
 	}
 
 /**
@@ -1740,45 +1862,6 @@
  * IMAGE EDIT/INSERT FUNCTIONS
  * -----------------------------------------------------------------------------
  */
-
-/**
- * get_image
- * 
- * 
- * 
- * 
- * 
- * 
- */
- 
-	function get_image($image_id) {
-		$conn = author_connect();
-		$query = "SELECT images.id, filename, images.title, alt,
-					credit, caption, author_id, authors.name as author_name,
-					width, height, ext, mime, size, date_uploaded
-					FROM images
-					LEFT JOIN authors on authors.id = author_id
-					WHERE images.id = ".$image_id;		
-		$result = $conn->query($query);
-		$data = array();
-		$row = $result->fetch_assoc();
-		// get thumb details
-		$thumb = WW_ROOT.'/ww_files/images/thumbs/'.$row['filename'];
-		if(file_exists($thumb)) {
-			$thumb_size 	= getimagesize($thumb);
-			$thumb_width 	= $thumb_size[0];
-			$thumb_height 	= $thumb_size[1];		
-		}
-		// get image url
-		$url = WW_REAL_WEB_ROOT.'/ww_files/images/';
-		// add to array
-		$row['src'] = $url.$row['filename'];
-		$row['thumb_src'] = $url.'thumbs/'.$row['filename'];
-		$row['thumb_width'] = (isset($thumb_width)) ? $thumb_width : 0 ;
-		$row['thumb_height'] = (isset($thumb_height)) ? $thumb_height : 0 ;
-		$result->close();
-		return $row;
-	}
 
 /**
  * get_images
@@ -1814,6 +1897,7 @@
 		// get image url
 		$url = WW_REAL_WEB_ROOT.'/ww_files/images/';
 		while($row = $result->fetch_assoc()) {
+			$row = stripslashes_deep($row);
 			$row['total_images'] = $total_images;
 			$row['total_pages'] = $total_pages;
 			$row['src'] = $url.$row['filename'];
@@ -1823,6 +1907,84 @@
 		$result->close();
 		$total_result->close();
 		return $data;		
+	}
+
+/**
+ * get_image_orphans
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_image_orphans() {
+		// get list of images in database
+		$conn = author_connect();
+		$query = "SELECT filename FROM images";
+		$result = $conn->query($query);
+		$db_list = array();
+		while($row = $result->fetch_assoc()) { 
+			$db_list[] = $row['filename'];
+		}
+		// get list of images in images folder
+		$image_folder = WW_ROOT.'/ww_files/images/';
+		$files = get_files($image_folder);
+		$file_list = array();
+		foreach($files as $file) {
+			$file_list[] = $file['filename'];
+		}
+		$orphans = array();
+		$files_diff = array_diff($file_list, $db_list);
+		if(!empty($files_diff)) {
+			$orphans['files'] = $files_diff;
+		}
+		$db_diff 	= array_diff($db_list,$file_list);
+		if(!empty($db_diff)) {
+			$orphans['db'] = $db_diff;
+		}
+		return $orphans;
+	}
+
+/**
+ * get_image
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+ 
+	function get_image($image_id) {
+		$conn = author_connect();
+		$query = "SELECT images.id, filename, images.title, alt,
+					credit, caption, author_id, authors.name as author_name,
+					width, height, ext, mime, size, date_uploaded
+					FROM images
+					LEFT JOIN authors on authors.id = author_id
+					WHERE images.id = ".$image_id;		
+		$result = $conn->query($query);
+		$data = array();
+		$row = $result->fetch_assoc();
+		$row = stripslashes_deep($row);
+		// get thumb details
+		$thumb = WW_ROOT.'/ww_files/images/thumbs/'.$row['filename'];
+		if(file_exists($thumb)) {
+			$thumb_size 	= getimagesize($thumb);
+			$thumb_width 	= $thumb_size[0];
+			$thumb_height 	= $thumb_size[1];		
+		}
+		// get image url
+		$url = WW_REAL_WEB_ROOT.'/ww_files/images/';
+		// add to array
+		$row['src'] = $url.$row['filename'];
+		$row['thumb_src'] = $url.'thumbs/'.$row['filename'];
+		$row['thumb_width'] = (isset($thumb_width)) ? $thumb_width : 0 ;
+		$row['thumb_height'] = (isset($thumb_height)) ? $thumb_height : 0 ;
+		$result->close();
+		return $row;
 	}
 
 /**
@@ -1862,20 +2024,38 @@
 			return $image_data;
 		}
 		// thumbnail?
-		$thumb_file = $_FILES['thumb_file'];
-		$th_location = WW_ROOT.'/ww_files/images/thumbs/';		
-		if(empty($thumb_file['error'])) {
-			// user has uploaded thumbnail
-			resize_image($thumb_file,$th_location);
+		$th_location = WW_ROOT.'/ww_files/images/thumbs/';
+		if( (isset($_FILES['thumb_file'])) && (empty($_FILES['thumb_file']['error'])) ) {
+			$thumb_file = $_FILES['thumb_file'];
+			resize_image($thumb_file,$th_location);				
 		} else {
 			// generate a thumbnail
 			$th_width = $config['files']['thumb_width'];
 			resize_image($image_file,$th_location,'',$th_width);	
 		}	
 		// now we can finally insert into the database
+		insert_image_details($image_data);
+		return;
+	}
+
+/**
+ * insert_image_details
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function insert_image_details($image_data) {
+		// check data was sent
+		if(!isset($_POST)) {
+			return 'no post data sent';
+		}	
 		$conn = author_connect();
-		$title 	= (!empty($_POST['title'])) ? $_POST['title'] : $image_data['name'] ;
-		$alt 	= (!empty($_POST['alt'])) ? $_POST['alt'] : $image_data['name'] ;
+		$title 	= (!empty($_POST['title'])) ? $_POST['title'] 	: $image_data['filename'] ;
+		$alt 	= (!empty($_POST['alt'])) 	? $_POST['alt'] 	: $image_data['filename'] ;
 		$credit = (!empty($_POST['credit'])) ? $_POST['credit'] : '' ;
 		$caption = (!empty($_POST['caption'])) ? $_POST['caption'] : '' ;
 		$author_id = (defined('WW_SESS')) ? $_SESSION[WW_SESS]['user_id'] : $_GET['author_id'] ;
@@ -1883,7 +2063,7 @@
 				(filename, title, alt, credit, caption, 
 				author_id, width, height, ext, mime, size, date_uploaded)
 			VALUES 
-				('".$conn->real_escape_string($image_data['name'])."',
+				('".$conn->real_escape_string($image_data['filename'])."',
 				'".$conn->real_escape_string($title)."',
 				'".$conn->real_escape_string($alt)."',
 				'".$conn->real_escape_string($credit)."',
@@ -1901,7 +2081,7 @@
 			return $conn->error;
 		} else {
 			return $new_id;
-		}
+		}	
 	}
 
 /**
@@ -1925,10 +2105,14 @@
 		$alt 		= (empty($_POST['alt'])) 	? $title 	: clean_input($_POST['alt']);
 		$caption 	= (empty($_POST['caption']))? '' 		: clean_input($_POST['caption']);
 		$credit 	= (empty($_POST['credit']))	? '' 		: clean_input($_POST['credit']);
+		$ext 		= (empty($_POST['ext']))	? '' 		: clean_input($_POST['ext']);
+		$mime	 	= (empty($_POST['mime']))	? '' 		: clean_input($_POST['mime']);
 		$query = "UPDATE images SET 
 							title 	= '".$conn->real_escape_string($title)."', 
 							alt 	= '".$conn->real_escape_string($alt)."',
 							caption = '".$conn->real_escape_string($caption)."',
+							ext 	= '".$conn->real_escape_string($ext)."',
+							mime 	= '".$conn->real_escape_string($mime)."',
 							credit 	= '".$conn->real_escape_string($credit)."'  
 						WHERE id = ".$id;
 		$conn->query($query);
@@ -1945,21 +2129,17 @@
  * 
  */	
 
-	function replace_image($current, $new, $width = 0) {
+	function replace_image($location, $new, $current, $width = 0) {
 		$width = (int)$width;
-		$replacement = replace_file($current, $new, $width);
+		$replacement = replace_file($location, $new, $current, $width);
 		if(!is_array($replacement)) {
 			return $replacement;
 		}
 		$conn = author_connect();
-		// prepare other variables
-		$title 		= (empty($_POST['title'])) 		? $filename : clean_input($_POST['title']);
-		$alt 		= (empty($_POST['alt'])) 		? $title 	: clean_input($_POST['alt']);
-		$caption 	= (empty($_POST['caption'])) 	? '' 		: clean_input($_POST['caption']);
-		$credit 	= (empty($_POST['credit']))		? '' 		: clean_input($_POST['credit']);
 		$query = "UPDATE images SET size = '".(int)$replacement['size']."', 
 									width = '".(int)$replacement['width']."',
 									height = '".(int)$replacement['height']."',
+									ext = '".$conn->real_escape_string($replacement['ext'])."',
 									mime = '".$conn->real_escape_string($replacement['mime'])."'
 									WHERE filename LIKE '".$conn->real_escape_string($replacement['name'])."'";
 		$conn->query($query);
@@ -1996,44 +2176,10 @@
 		$query = "DELETE FROM images WHERE filename LIKE '".$filename."'";
 		$result = $conn->query($query);
 		if(!$result) {
-			return 'there was a problem deleting the image';
+			return 'There was a problem deleting the image: '.$conn->error;
 		} else {
 			return true;
 		}
-	}
-
-/**
- * get_image_orphans
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-	function get_image_orphans() {
-		// get list of images in database
-		$conn = author_connect();
-		$query = "SELECT filename FROM images";
-		$result = $conn->query($query);
-		$db_list = array();
-		while($row = $result->fetch_assoc()) { 
-			$db_list[] = $row['filename'];
-		}
-		// get list of images in images folder
-		$image_folder = WW_ROOT.'/ww_files/images';
-		$files = get_files($image_folder);
-		$file_list = array();
-		foreach($files as $file) {
-			$file_list[] = $file['name'];
-		}
-		debug_array($db_list);
-		debug_array($file_list);
-		$orphans = array();
-		$orphans['files']= array_diff($file_list, $db_list);
-		$orphans['db'] = array_diff($db_list,$file_list);
-		return $orphans;
 	}
 
 /**
@@ -2041,66 +2187,6 @@
  * ATTACHMENT EDIT/INSERT FUNCTIONS
  * -----------------------------------------------------------------------------
  */
-
-/**
- * get_attachment_full
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-
-	function get_attachment_full($attachment_id) {
-		if(empty($attachment_id)) {
-			return false;
-		}
-		$conn = author_connect();
-		$query = "SELECT 
-					attachments.id, attachments.title, filename, 
-					author_id, authors.name as author_name, attachments.summary,
-					ext, size, mime, downloads, attachments.date_uploaded
-				FROM attachments 
-				LEFT JOIN authors on authors.id = author_id
-				WHERE attachments.id = ".(int)$attachment_id;
-		$result = $conn->query($query);
-		$row = $result->fetch_assoc();
-		$row['link'] = WW_WEB_ROOT.'/ww_files/attachments/'.$row['ext'].'/'.$row['filename'];
-		return $row;		
-	}
-
-/**
- * attachment_usage
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-	
-	function attachment_usage($attachment_id) {
-		if(empty($attachment_id)) {
-			return false;
-		}
-		$conn = author_connect();
-		$query = "SELECT article_id, articles.url, articles.title
-					FROM attachments_map
-					LEFT JOIN articles ON article_id = articles.id
-					WHERE attachment_id = ".(int)$attachment_id;
-		$result = $conn->query($query);
-		$data = array();
-		if(empty($result)) {
-			return $data;
-		}
-		while($row = $result->fetch_assoc()) {
-			$data[] = $row;
-		}
-		$result->close();
-		return $data;
-	}
 
 /**
  * get_attachments
@@ -2137,7 +2223,7 @@
 		}
 		$query .= (!empty($where)) ? ' WHERE '.implode(' AND ', $where) : '' ;
 		$query .= " ORDER BY date_uploaded DESC";
-		//echo $query;
+		// echo $query;
 		// add pagination
 			$query_paginated = $query." LIMIT ".(int)$from.", ".(int)$per_page;
 			$result = $conn->query($query_paginated);
@@ -2147,18 +2233,121 @@
 			$total_files = $total_result->num_rows;
 			$total_pages = ceil($total_files / $per_page);
 
-		$data['total_files'] = $total_files;
-		$data['total_pages'] = $total_pages;
 		// get image url
+		$data = array();
 		$url = WW_REAL_WEB_ROOT.'/ww_files/attachments/';
 		while($row = $total_result->fetch_assoc()) {
+			$row['total_files'] = $total_files;
+			$row['total_pages'] = $total_pages;			
 			$row['src'] = $url.$row['ext'].'/'.$row['filename'];
-			$data[$row['id']] = $row;
+			$data[] = $row;
 		}
 		$result->close();
 		$total_result->close();
 		return $data;		
 	}
+
+/**
+ * get_attachment_orphans
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_attachment_orphans($ext) {
+		// get list of images in database
+		$conn = author_connect();
+		$query = "SELECT filename 
+					FROM attachments 
+					WHERE ext LIKE '".$conn->real_escape_string($ext)."'";
+		$result = $conn->query($query);
+		$db_list = array();
+		while($row = $result->fetch_assoc()) { 
+			$db_list[] = $row['filename'];
+		}
+		// get list of images in images folder
+		$attachment_folder = WW_ROOT.'/ww_files/attachments/'.$ext.'/';
+		$files = get_files($attachment_folder);
+		$file_list = array();
+		foreach($files as $file) {
+			$file_list[] = $file['filename'];
+		}
+		$orphans = array();
+		$files_diff = array_diff($file_list, $db_list);
+		if(!empty($files_diff)) {
+			$orphans['files'] = $files_diff;
+		}
+		$db_diff 	= array_diff($db_list,$file_list);
+		if(!empty($db_diff)) {
+			$orphans['db'] = $db_diff;
+		}
+		return $orphans;
+	}
+
+/**
+ * get_attachment
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+
+	function get_attachment($attachment_id) {
+		if(empty($attachment_id)) {
+			return false;
+		}
+		$conn = author_connect();
+		$query = "SELECT 
+					attachments.id, attachments.title, filename, 
+					author_id, authors.name as author_name, attachments.summary,
+					ext, size, mime, downloads, attachments.date_uploaded
+				FROM attachments 
+				LEFT JOIN authors on authors.id = author_id
+				WHERE attachments.id = ".(int)$attachment_id;
+		$result = $conn->query($query);
+		$row = $result->fetch_assoc();
+		$row['src'] = WW_WEB_ROOT.'/ww_files/attachments/'.$row['ext'].'/'.$row['filename'];
+		return $row;		
+	}
+
+/**
+ * attachment_usage
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function attachment_usage($attachment_id) {
+		if(empty($attachment_id)) {
+			return false;
+		}
+		$conn = author_connect();
+		$query = "SELECT article_id, articles.url, articles.title
+					FROM attachments_map
+					LEFT JOIN articles ON article_id = articles.id
+					WHERE attachment_id = ".(int)$attachment_id;
+		$result = $conn->query($query);
+		$data = array();
+		if(empty($result)) {
+			return $data;
+		}
+		while($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+		$result->close();
+		return $data;
+	}
+
+
 
 /**
  * insert_attachment
@@ -2206,7 +2395,7 @@
 				(filename, title, summary, 
 				author_id, ext, mime, size, date_uploaded)
 			VALUES 
-				('".$conn->real_escape_string($file_data['name'])."',
+				('".$conn->real_escape_string($file_data['filename'])."',
 				'".$conn->real_escape_string($title)."',
 				'".$conn->real_escape_string($summary)."',
 				".(int)$author_id.",
@@ -2216,10 +2405,51 @@
 				'".$conn->real_escape_string(date('Y-m-d H:i:s'))."')";
 		$result = $conn->query($query);
 		if(!$result) {
-			unlink($location.$file_data['name']);
+			unlink($location.$file_data['filename']);
 			return $conn->error;
 		} else {
 			$new_id = $conn->insert_id;
+			return $new_id;
+		}		
+	}
+
+
+/**
+ * insert_attachment_details
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function insert_attachment_details($attachment_data) {
+		// check data was sent
+		if(!isset($_POST)) {
+			return 'no post data sent';
+		}	
+		$conn = author_connect();
+		$title 	= (!empty($_POST['title'])) ? $_POST['title'] 	: $attachment_data['filename'] ;
+		$summary = (!empty($_POST['summary'])) ? $_POST['summary'] : '' ;
+		$author_id = (defined('WW_SESS')) ? $_SESSION[WW_SESS]['user_id'] : $_GET['author_id'] ;
+		$query = "INSERT INTO attachments 
+				(filename, title, summary, 
+				author_id, ext, mime, size, date_uploaded)
+			VALUES 
+				('".$conn->real_escape_string($attachment_data['filename'])."',
+				'".$conn->real_escape_string($title)."',
+				'".$conn->real_escape_string($summary)."',
+				".(int)$author_id.",
+				'".$conn->real_escape_string($attachment_data['ext'])."',
+				'".$conn->real_escape_string($attachment_data['mime'])."',
+				".(int)$attachment_data['size'].",
+				'".$conn->real_escape_string(date('Y-m-d H:i:s'))."')";
+		$result = $conn->query($query);
+		$new_id = $conn->insert_id;
+		if(!$result) {
+			return $conn->error;
+		} else {
 			return $new_id;
 		}		
 	}
@@ -2241,8 +2471,8 @@
 		}
 		$conn = author_connect();
 		// prepare other variables
-		$title 		= (empty($_POST['title'])) 		? $_POST['filename'] : clean_input($_POST['title']);
-		$summary 	= (empty($_POST['summary'])) 	? $title 	: clean_input($_POST['alt']);
+		$title 		= (empty($_POST['title'])) 		? clean_input($_POST['filename']) : clean_input($_POST['title']);
+		$summary 	= (empty($_POST['summary'])) 	? '' 	: clean_input($_POST['summary']);
 		$query = "UPDATE attachments SET 
 							title 	= '".$conn->real_escape_string($title)."', 
 							summary = '".$conn->real_escape_string($summary)."'  
@@ -2251,6 +2481,30 @@
 		return true;		
 	}
 
+/**
+ * replace_attachment
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function replace_attachment($location, $new, $current) {
+		$replacement = replace_file($location, $new, $current);
+		if(!is_array($replacement)) {
+			return $replacement;
+		}
+		$conn = author_connect();
+		$query = "UPDATE attachments SET size = '".(int)$replacement['size']."', 
+									ext = '".$conn->real_escape_string($replacement['ext'])."',
+									mime = '".$conn->real_escape_string($replacement['mime'])."'
+									WHERE filename LIKE '".$conn->real_escape_string($replacement['filename'])."'";
+		$conn->query($query);
+		return true;
+	}
+	
 /**
  * delete_attachment
  * 
@@ -2261,43 +2515,28 @@
  * 
  */	
 
-	function delete_attachment() {
-		
-	}
-
-/**
- * get_attachment_orphans
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-	function get_attachment_orphans($ext) {
-		// get list of images in database
+	function delete_attachment($filename, $ext) {
+		if(empty($filename)) {
+			return 'No filename specified';
+		}
+		$path = WW_ROOT.'/ww_files/attachments/'.$ext;
+		$file = $path.'/'.$filename;
+		// delete file
+		if(file_exists($file)) {
+			unlink($file);
+		}
+		// delete database entry
 		$conn = author_connect();
-		$query = "SELECT filename 
-					FROM attachments 
-					WHERE ext LIKE '".$conn->real_escape_string($ext)."'";
+		$query = "DELETE FROM attachments WHERE filename LIKE '".$filename."'";
 		$result = $conn->query($query);
-		$db_list = array();
-		while($row = $result->fetch_assoc()) { 
-			$db_list[] = $row['filename'];
+		if(!$result) {
+			return 'There was a problem deleting the attachment: '.$conn->error;
+		} else {
+			return true;
 		}
-		// get list of images in images folder
-		$attachment_folder = WW_ROOT.'/ww_files/attachments/'.$ext.'/';
-		$files = get_files($attachment_folder);
-		$file_list = array();
-		foreach($files as $file) {
-			$file_list[] = $file['filename'];
-		}
-		$orphans = array();
-		$orphans['files']= array_diff($file_list, $db_list);
-		$orphans['db'] = array_diff($db_list,$file_list);
-		return $orphans;
 	}
+
+
 
 /**
  * -----------------------------------------------------------------------------
@@ -2337,6 +2576,8 @@
 		return $data;		
 	}
 
+
+
 /**
  * upload_file()
  * 
@@ -2370,7 +2611,7 @@
 
 		// if a new filename isn't specified then use original filename
 			$filename = (empty($setfilename)) ? $file['name'] : $setfilename ;
-		
+
 		// make sure extension is appended
 			$extlen = strlen($ext);
 			if (substr($filename,(0-$extlen)) != $ext) {
@@ -2396,7 +2637,7 @@
 			} else {
 				// chmod($upload_file, 0644);
 				$new_file = array();
-				$new_file['name'] 	= $filename;
+				$new_file['filename'] 	= $filename;
 				$new_file['size'] 	= $file['size'];
 				$new_file['mime'] 	= $file['type'];
 				$new_file['ext'] 	= $ext;
@@ -2423,42 +2664,41 @@
  * 
  */	
 
-	function replace_file($current_file, $new_file, $new_width = 0) {
+	function replace_file($location, $new_file, $current_file, $new_width = 0) {
 		if(!isset($_FILES)) {
 			return 'No file uploaded';
 		}
-		// we need to check that the old file and new file are the same type
-		$current_path = pathinfo($current_file);
-		$location 	= $current_path['dirname'];
-		$filename 	= $current_path['basename'];
 		// check for end slash on location
-		$location = end_slash($location);
-		$current_ext 	= strtolower($current_path['extension']);
+		$location 	= end_slash($location);
 		// get extension of uploaded file
 		$new_path 	= pathinfo($new_file['name']);
 		$new_ext 	= strtolower($new_path['extension']);
-		// unlink the old file
-		if($current_ext != $new_ext) {
-			return 'Uploaded file is a different type to existing file';
+		// get current filename
+		$current = 	pathinfo($current_file);
+		$current_ext = $current['extension'];
+		// check extensions match
+		if($new_ext != $current_ext) {
+			return 'File types don\'t match';
+		}
+		// delete existing file	
+		$current_file_path = $location.$current_file;	
+		if(file_exists($current_file_path)) {
+			unlink($current_file_path);
 		}
 		// check file upload
 		$check_file = check_file_upload($new_file, $location);
 		if(!empty($check_file)) {
 			return $check_file;
 		}
-		// delete existing file
-		if(file_exists($current_file)) {
-			unlink($current_file);
-		}
+		// is it an image
 		$img_array = array('gif','jpg','png');
 		if( (in_array($new_ext,$img_array)) && (!empty($new_width)) ) {
-			$replaced_file = resize_image($new_file, $location, $filename, $new_width);
+			$replaced_file = resize_image($new_file, $location, $current_file, $new_width);
 		} else {
-			$replaced_file = upload_file($new_file, $location, $filename);
+			$replaced_file = upload_file($new_file, $location, $current_file);
 		}
 		return $replaced_file;
 	}
-
 
 /**
  * resize_img()
@@ -2574,7 +2814,7 @@
 			} else {
 				$new_file = array();
 				$img_details = getimagesize($newfile);
-				$new_file['name'] 	= $filename;
+				$new_file['filename'] 	= $filename;
 				$new_file['size'] 	= filesize($newfile);
 				$new_file['width'] 	= $img_details[0];
 				$new_file['height'] = $img_details[1];
@@ -2654,4 +2894,201 @@
 		return 0; // send empty value
 	}
 
+/**
+ * -----------------------------------------------------------------------------
+ * LINKS
+ * -----------------------------------------------------------------------------
+ */
+	
+/**
+ * get_links
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
+	function get_links() {
+		$conn = reader_connect();
+		$query = "SELECT * FROM links ORDER BY category, id DESC";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) { 
+			$data[$row['category']][] = $row;
+		}
+		$result->close();
+		return $data;		
+	}
+
+/**
+ * get_link_categories
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function get_link_categories() {
+		$conn = author_connect();
+		$query = "SELECT category 
+					FROM links 
+					WHERE category NOT IN('site_rss','site_menu','site_head')
+					GROUP BY category";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) { 
+			$data[] = $row;
+		}
+		$result->close();
+		return $data;		
+	}
+	
+/**
+ * get_link
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function get_link($link_id) {
+		if(empty($link_id)) {
+			return false;
+		}
+		$conn = reader_connect();
+		$query = "SELECT * FROM links WHERE id = ".(int)$link_id;
+		$result = $conn->query($query);
+		$row = $result->fetch_assoc();
+		return $row;
+	}
+
+/**
+ * validate_url
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function validate_url($url) {
+		if (preg_match('|^\S+://\S+\.\S+.+$|', $url)) {
+			return true;
+		} else {
+			return false;
+		}		
+	}
+
+/**
+ * insert_link
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function insert_link() {
+		if(!isset($_POST)) {
+			return 'no post data sent';
+		}
+		if(validate_url($_POST['url']) === false) {
+			return 'invalid url provided';
+		}
+		$conn = author_connect();
+		$title 	= (!empty($_POST['title'])) ? clean_input($_POST['title']) : $_POST['url'] ;
+		$attributes	= (!empty($_POST['attributes'])) ? clean_input($_POST['attributes']) : '' ;
+		$summary 	= (!empty($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
+		$category 	= (!empty($_POST['category'])) ? clean_input($_POST['category']) : '' ;
+		$category 	= (!empty($_POST['new_category'])) ? clean_input($_POST['new_category']) : $category ;
+		$insert = "INSERT INTO links
+				(title, url, attributes, summary, category)
+				VALUES
+				(
+				'".$conn->real_escape_string($title)."',
+				'".$conn->real_escape_string($_POST['url'])."',
+				'".$conn->real_escape_string($attributes)."',
+				'".$conn->real_escape_string($summary)."',
+				'".$conn->real_escape_string($category)."'
+				)";
+		$result = $conn->query($insert);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			$new_id = $conn->insert_id;
+			return $new_id;
+		}
+	}
+	
+/**
+ * update_link
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
+	function update_link($link_id) {
+		if(empty($link_id)) {
+			return false;
+		}
+		if(!isset($_POST)) {
+			return 'no post data sent';
+		}
+		if(validate_url($_POST['url'] === false)) {
+			return 'invalid url provided';
+		}
+		$conn = author_connect();
+		$title 	= (!empty($_POST['title'])) ? clean_input($_POST['title']) : $_POST['url'] ;
+		$attributes	= (!empty($_POST['attributes'])) ? clean_input($_POST['attributes']) : '' ;
+		$summary 	= (!empty($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
+		$category 	= (!empty($_POST['category'])) ? clean_input($_POST['category']) : '' ;
+		$query = "UPDATE links SET
+					title = '".$conn->real_escape_string($title)."',
+					url = '".$conn->real_escape_string($_POST['url'])."',
+					attributes = '".$conn->real_escape_string($attributes)."',
+					summary = '".$conn->real_escape_string($summary)."',
+					category = '".$conn->real_escape_string($category)."'
+					WHERE id = ".(int)$link_id;
+		$result = $conn->query($query);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			return true;
+		}
+	}
+	
+/**
+ * delete_link
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function delete_link($link_id) {
+		if(empty($link_id)) {
+			return false;
+		}
+		$conn = author_connect();
+		$query = "DELETE FROM links WHERE id = ".(int)$link_id;
+		$result = $conn->query($query);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			return true;
+		}
+	}
 ?>
