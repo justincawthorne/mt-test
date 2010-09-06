@@ -150,14 +150,21 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 			<ul id="nav_links">
 				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=write">Write!</a></li>
 				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=articles">Articles</a></li>
-			<!--<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=authors">Authors</a></li>-->
 				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=comments">Comments</a></li>
-				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=files">Files</a></li>';
+				';
+		
 		if(empty($_SESSION[WW_SESS]['guest'])) { 
+		// author only links	
 			echo '
+				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=files">Files</a></li>
 				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=links">Links</a></li>
 				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=settings">Settings</a></li>';
-		}
+		} else {
+		// editor / contributor links
+			echo '
+				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=images">Images</a></li>
+				<li><a href="'.WW_REAL_WEB_ROOT.'/ww_edit/index.php?page_name=attachments">Attachments</a></li>';
+		} 
 		echo '
 			</ul>
 		</div>';
@@ -641,11 +648,12 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 	function form_article_tab($article_data) {
 		
 		// authors
-		// show list only if there's more than one author and the logged in user is admin
-		$author_list = get_authors_admin();
-		if( (count($author_list) > 1) && (empty($_SESSION[WW_SESS]['guest'])) ) {
+
+		if( (empty($_SESSION[WW_SESS]['guest'])) || ($_SESSION[WW_SESS]['level'] == 'editor') ) {
+			
+			$author_list = get_authors_admin();
 			$author_select = '
-					<select name="author_id" title="select author">
+				<select name="author_id" title="select author">
 				';
 			foreach($author_list as $author) {
 				$a_selected = ($article_data['author_id'] == $author['id']) ? ' selected="selected"' : '' ;
@@ -655,14 +663,18 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 			}
 			$author_select .= '				
 				</select>';
+				
 		} else {
-			$author_select = '<input type="hidden" name="author_id" value="'.$article_data['author_id'].'"/>';
+			
+			$author_select = '
+				<input type="hidden" name="author_id" value="'.$_SESSION[WW_SESS]['user_id'].'"/>
+				<input type="text" name="author_name" value="'.$_SESSION[WW_SESS]['name'].'" readonly="readonly"/>';
 		}
 		
 		// categories
 		$category_list = get_categories_admin();
 		$category_select = '
-					<select name="category_id">
+				<select name="category_id">
 				';
 			foreach($category_list as $category) {
 				$c_selected = ($article_data['category_id'] == $category['id']) ? ' selected="selected"' : '' ;
@@ -706,7 +718,7 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 				</p>
 				<p>
 					<label for="summary">Summary/Intro</label>
-					<textarea name="summary" title="type article summary" cols="40" rows="3">'.$article_data['summary'].'</textarea>
+					<textarea name="summary" id="summary" title="type article summary" cols="40" rows="4">'.$article_data['summary'].'</textarea>
 				</p>
 				<p>
 					<label for="body">Article</label>

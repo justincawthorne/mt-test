@@ -139,8 +139,11 @@
 	// if no single attachment is found/requested we return a list
 
 		$attachments = get_attachments();
-		
+
 		// get total attachments and total pages
+		
+		$total_files = (!empty($attachments)) ? $attachments[0]['total_files'] : 0 ;
+		$total_pages = (!empty($attachments)) ? $attachments[0]['total_pages'] : 0 ;
 		
 		// check for rogues and orphans
 		
@@ -176,7 +179,7 @@
 		$left_text .= ': <a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">attachments</a>';
 		$left_text .= ': <a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments&amp;ext='.$attachment['ext'].'">'.$attachment['ext'].'</a>';
 	}
-	$right_text = (isset($attachment)) ? $attachment['filename'] : 'listing' ;
+	$right_text = (isset($attachment)) ? $attachment['filename'] : $total_files.' found' ;
 	$page_header = show_page_header($left_text, $right_text);
 
 
@@ -215,7 +218,7 @@
 	
 	if(isset($attachments)) {
 		
-		if(empty($attachments)) {
+		if( (empty($attachments)) && (!isset($orphans['files'])) && (isset($_GET['ext'])) ) {
 			$main_content .= '
 			<h4>Oh noes - this appears to be an empty folder! Would you like to delete it?</h4>
 			
@@ -411,12 +414,14 @@
 
 // output aside content - into $aside_content variable
 
-	$aside_content = '
-			<h4>Quick links</h4>
+	$quicklinks = '
 			<ul>
+				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=files">Files</a></li>
 				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=images">Images</a></li>
 				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">Attachments</a></li>
 			</ul>';
+
+	$aside_content = build_snippet('Quick Links', $quicklinks);	
 
 	// attachment subfolders
 	

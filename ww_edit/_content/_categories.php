@@ -12,7 +12,7 @@
 
 		$insert_status = insert_category();
 		if(is_int($insert_status)) {
-			$reload = $_SERVER["PHP_SELF"].'?page_name=categories&category_id='.$new_category_id;
+			$reload = $_SERVER["PHP_SELF"].'?page_name=categories&category_id='.$insert_status;
 			header('Location: '.$reload);			
 		} else {
 			$insert_error = $insert_status;
@@ -68,13 +68,31 @@
 	}
 
 
+// if no category selected
 
-
-
-	// show category details if requested
-	
-	if(!empty($category_id)) {
-
+	if(empty($category_id)) {
+		
+		$left_text = 'Categories';
+		$right_text = '';
+		
+		$page_header = show_page_header($left_text, $right_text);
+		
+		$main_content = $page_header;
+		$main_content .= '<p>No category selected: choose a category to edit from the right hand menu.</p>';
+		
+	} else {
+		
+	// get category details
+		
+		$category = get_category_details($category_id);
+				
+		$left_text = $category['title'];
+		$right_text = $category['url'];
+		
+		$page_header = show_page_header($left_text, $right_text);
+		
+		$main_content = $page_header;
+		
 	// confirm file delete
 		
 		if( (isset($_GET['action'])) && ($_GET['action'] == 'delete') ) {
@@ -88,38 +106,26 @@
 				<hr />
 				';
 			
-		}
-
-
+		}				
+				
+	// check usage
 		
-		// get category details
-		
-		$category = get_category_details($category_id);
 		$usage = (empty($category['category_id'])) 
 			? $categories_list[$category_id]['total'] 
-			: $categories_list[$category['category_id']]['child'][$category_id]['total'] ;
+			: $categories_list[$category['category_id']]['child'][$category_id]['total'] ;	
 		
-		// use category details for page header
+	// build edit form
 		
-		$left_text = $category['title'];
-		$right_text = $category['url'];
-	
-		// build edit form
+		$main_content .= '
+				<h4>edit category</h4>';
 		
-		$page_content = '
-				<h2>Edit category</h2>';
-		
-		if(!empty($usage)) {
-			$page_content .= '		
-				<p><a href="'.$_SERVER["PHP_SELF"].'?page_name=articles&amp;category_id='.$category_id.'">
+		$main_content .= (empty($usage)) 
+			? '<p>This category is not currently used by any articles.</p>'
+			: '<p><a href="'.$_SERVER["PHP_SELF"].'?page_name=articles&amp;category_id='.$category_id.'">
 					Check which articles use this category</a>
 				</p>';
-		} else {
-			$page_content .= '
-				<p>This category is not currently used by any articles.</p>';
-		}
 		
-		$page_content .= '		
+		$main_content .= '		
 				<form action="'.$_SERVER["PHP_SELF"].'?page_name=categories&amp;category_id='.$category_id.'" 
 					method="post" 
 					id="edit_category_form">
@@ -128,10 +134,12 @@
 					<input name="title" id="title" type="text" value="'.$category['title'].'"/>
 				</p>
 				<p>
-					<label for="url">Url (read only)</label>
+					<label for="url">URL</label>
 					<input name="url" id="url" type="text" value="'.$category['url'].'" readonly="readonly"/>
 					<span class="note">
-						<input name="update_url" id="update_url" value="1" type="checkbox"/>&nbsp;tick here if you want the url-friendly version of the category title updated<br />(note that this may change the permanent url for your article)
+						<input name="update_url" id="update_url" value="1" type="checkbox"/>
+						&nbsp;tick here if you want the url-friendly version of the category title updated
+						<br />(note that this may change the permanent url for your article)
 					</span>
 
 				</p>
@@ -144,36 +152,38 @@
 								continue;
 							}
 							$selected = ($option_id == $category['category_id']) ? ' selected="selected"' : '';
-							$page_content .= '
+							$main_content .= '
 								<option value="'.$option_id.'"'.$selected.'>'.$option.'</option>
 							';
 						}
-		$page_content .= '
+		$main_content .= '
 					</select>
 				</p>
 				<p>
-					<label for="summary">Summary (optional)</label>
-					<textarea name="summary" id="summary" cols="21" rows="3">'.$category['summary'].'</textarea>
+					<label for="summary">Summary</label>
+					<textarea name="summary" id="summary" cols="21" rows="3" class="optional">'.$category['summary'].'</textarea>
 					<span class="note">brief optional summary to show on listings page and at the head of the rss feed for this category</span>
 				</p>
 				<p>
-					<label for="description">Description (optional)</label>
-					<textarea name="description" id="description" cols="21" rows="3">'.$category['description'].'</textarea>
+					<label for="description">Description</label>
+					<textarea name="description" id="description" cols="21" rows="3" class="optional">'.$category['description'].'</textarea>
 					<span class="note">longer description only used for podcast/rss feeds</span>
 				</p>
 				<p>
 					<label for="type">Type</label>
-					<input name="type" id="type" type="text" value="'.$category['type'].'"/>
+					<input name="type" id="type" type="text" value="'.$category['type'].'" class="optional"/>
 					<span class="note">iTunes category for podcasts</span>
 				</p>
 				<p>
+					<span class="note">
 					<input name="edit_category" value="edit" type="submit"/>
+					</span>
 				</p>
-				</form';
+				</form>';
 				
 	// delete category form	
 	
-		if(!empty($usage)) {
+		if(empty($usage)) {
 			
 			$main_content .= '
 				<hr />
@@ -192,13 +202,6 @@
 			
 			}		
 				
-		} else {
-		
-			$left_text = 'Categories';
-			$right_text = '';
-			
-			$page_content = '<p>No category selected: choose a category to edit from the right hand menu.</p>';
-			
 		}
 
 
@@ -235,13 +238,6 @@
 				</p>
 				</form>
 	';
-
-
-// output main content - into $main_content variable
-
-	$main_content = show_page_header($left_text, $right_text);;
-	$main_content .= $page_content;
-
 
 // output aside content - into $aside_content variable
 

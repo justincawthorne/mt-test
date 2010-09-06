@@ -90,27 +90,47 @@
 	
 	$theme = 'desktop';
 	
+	// the initial list of pages is available to authors, editors and contributors
+	
 	$allowed_pages = array(	'front',
 							'write',
 							'articles',
 							'comments',
-							'categories',
-							'tags',
 							'authors',
-							'links',
-							'files',
 							'images',
 							'attachments',
-							'settings',
 							);
+							
+	// the following additional pages are only accessible to authors and editors
 	
+	if( (!empty($_SESSION[WW_SESS]['guest'])) && ($_SESSION[WW_SESS]['level'] == 'editor') ) {
+	
+		$allowed_pages[] = 'categories';
+		$allowed_pages[] = 'tags';
+		
+	}
+	
+	// the following pages are only accessible at author level
+	
+	if(empty($_SESSION[WW_SESS]['guest'])) {
+
+		$allowed_pages[] = 'categories';
+		$allowed_pages[] = 'tags';		
+		$allowed_pages[] = 'settings';
+		$allowed_pages[] = 'links';
+		$allowed_pages[] = 'files';
+		
+	}
+	
+	// verify the requested page				
+
 	$page_name = (isset($_GET['page_name'])) ? $_GET['page_name'] : 'front' ;
 	$page_name = (in_array($page_name,$allowed_pages)) ? $page_name : 'front' ;
 	
 	$content_partial = WW_ROOT.'/ww_edit/_content/_'.$page_name.'.php';
 
 
-// current url
+// current url - useful for forms, redirects, etc
 
 	$url = current_url();
 	$action_url = htmlspecialchars($url); // with entities for xhtml validity

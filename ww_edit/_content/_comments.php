@@ -1,7 +1,7 @@
 <?php
 // page title - if undefined the site title is displayed by default
 
-	$page_title = 'Comments';
+	$page_title = 'comments';
 
 
 // get any url parameters

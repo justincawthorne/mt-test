@@ -34,7 +34,7 @@
  * @return	string	$date		the formatted date string
  */
 	
-	function from_mysql_date($mydate, $format = 'd M Y \a\t H:i') {
+	function from_mysql_date($mydate, $format = 'j M Y \a\t H:i') {
 		$ts = strtotime($mydate);
 		if(empty($ts)) {
 			return 'not published';
@@ -59,6 +59,27 @@
 			: $_SERVER['HTTP_HOST'] ;
 		$current_url = $host.$_SERVER["REQUEST_URI"];
 		return $current_url;
+	}
+
+/**
+ * validate_email
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+	
+	function validate_email($email) {
+		if(empty($email)) {
+			return false;
+		}
+		$epattern = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})';
+		if (!eregi($epattern, $email)) {
+			return false;
+		}
+		return true;
 	}
 	
  /**
@@ -87,6 +108,82 @@
 			}
 		}
 		return false;			
+	}
+
+/**
+ * get_author_name
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_author_name($id) {
+		$id = (int)$id;
+		if(empty($id)) {
+			return false;
+		}
+		$conn = reader_connect();
+		$query = "SELECT name 
+					FROM authors
+					WHERE id = ".(int)$id;
+		$result = $conn->query($query);
+		$row = $result->fetch_assoc();
+		$result->close();
+		return $row['name'];
+	}
+
+/**
+ * get_category_title
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function get_category_title($id) {
+		$id = (int)$id;
+		if(empty($id)) {
+			return false;
+		}
+		$conn = reader_connect();
+		$query = "SELECT title 
+					FROM categories
+					WHERE id = ".(int)$id;
+		$result = $conn->query($query);
+		$row = $result->fetch_assoc();
+		$result->close();
+		return $row['title'];
+	}
+
+
+/**
+ * get_tag_title
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_tag_title($id) {
+		$id = (int)$id;
+		if(empty($id)) {
+			return false;
+		}
+		$conn = reader_connect();
+		$query = "SELECT title 
+					FROM tags
+					WHERE id = ".(int)$id;
+		$result = $conn->query($query);
+		$row = $result->fetch_assoc();
+		$result->close();
+		return $row['title'];
 	}
 
 /**
@@ -230,10 +327,11 @@
 		if(empty($content)) {
 			return false;
 		}
-		if( (is_array($content)) && (count($content) < 2) ) {
+		$limit = (defined('WW_SESS')) ? 1 : 2 ;
+		if( (is_array($content)) && (count($content) < $limit) ) {
 			return false;
 		}
-		$current_uri = current_url();
+		$current_url = current_url();
 		// start building
 		$snippet = '
 		<div class="snippet">
@@ -246,7 +344,7 @@
 			$snippet .= '
 			<ul>';
 			foreach($content as $snip) {
-				$current = ($snip['link'] == $current_uri) ? ' class="current"' : '' ;
+				$current = ($snip['link'] == $current_url) ? ' class="current"' : '' ;
 				$link_title = (!empty($snip['link_title'])) ? $snip['link_title'] : $snip['title'] ;
 				$snippet .= '
 				<li'.$current.'>';
@@ -267,7 +365,7 @@
 					$snippet .= '
 					<ul>';
 					foreach($snip['child'] as $child) {
-						$current = ($child['link'] == $current_uri) ? ' class="current"' : '' ;
+						$current = ($child['link'] == $current_url) ? ' class="current"' : '' ;
 						$link_title = (!empty($child['link_title'])) ? $child['link_title'] : $child['title'] ;
 						$snippet .= '
 						<li'.$current.'>';
@@ -427,6 +525,13 @@
 		$details['path'] 		= $pathinfo['dirname'];
 		$details['filename'] 	= $pathinfo['basename'];
 		$details['ext'] 		= $pathinfo['extension'];
+		if(function_exists('finfo_open')) {
+			$finfo = new finfo;
+			$details['mime'] 	= $finfo->file($filepath, FILEINFO_MIME);
+		} else {
+			$details['mime'] 	= (function_exists('mime_content_type')) ? mime_content_type($filepath) : '' ;
+		}
+		
 		$details['size'] 		= filesize($filepath);
 		$details['date_uploaded'] = filemtime($filepath);
 		$details['id']			= 0;

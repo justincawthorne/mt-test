@@ -199,8 +199,8 @@ include_once('ww_config/model_functions.php');
 
 	$update = "
 	UPDATE settings, ww_config 
-	SET property_value = ww_config.property_value
-	WHERE settings.property_name = ww_settings.property_name";
+	SET settings.property_value = ww_config.property_value
+	WHERE settings.property_name = ww_config.property_name";
 
 // run sql
 	
@@ -212,7 +212,7 @@ include_once('ww_config/model_functions.php');
 		$rows = $total->num_rows;
 		echo $table.' has '.$rows.' rows<br/>';
 		if(empty($rows)) {
-			$result = $conn->query($total);
+			$result = $conn->query($insert);
 			if(!$result) {
 				echo $conn->error.'<br />';
 			} else {

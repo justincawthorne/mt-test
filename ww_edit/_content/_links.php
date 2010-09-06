@@ -2,7 +2,7 @@
 
 // page title - if undefined the site title is displayed by default
 
-	$page_title = 'Links';
+	$page_title = 'links';
 
 	function build_links_listing($links) {
 		if(empty($links)) {
@@ -137,8 +137,7 @@
 	$main_content = $page_header;
 	
 	$main_content .= '
-		by default show a tabbed list of links (site menu, head link tag, rss, and blogroll)<br />
-		click on a link to edit it using the form on the right hand side';
+		<p>Add links to your menu, additional rss feeds, &lt;link&gt; tags for the head section (not yet implemented) and other links for a blogroll.</p>';
 
 	// show errors
 	

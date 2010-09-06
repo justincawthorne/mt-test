@@ -99,7 +99,7 @@ function show_head($head_content = '', $config = '') {
 	: insert_js($config['site']['theme']);
 		
 	// analytics
-	if(!empty($config['analytics']['google_analytics'])) {
+	if(!empty($config['connections']['google_analytics'])) {
 		echo insert_google_analytics($config['analytics']['google_analytics']);		
 	}
 
@@ -438,14 +438,14 @@ function insert_favicon($theme = 'default') {
 			: insert_footer() ;
 		
 		// analytics
-		if(!empty($config['analytics']['compete_analytics'])) {
-			echo insert_compete_analytics($config['analytics']['compete_analytics']);		
+		if(!empty($config['connections']['compete_analytics'])) {
+			echo insert_compete_analytics($config['connections']['compete_analytics']);		
 		}
-		if(!empty($config['analytics']['getclicky_analytics'])) {
-			echo insert_getclicky_analytics($config['analytics']['getclicky_analytics']);		
+		if(!empty($config['connections']['getclicky_analytics'])) {
+			echo insert_getclicky_analytics($config['connections']['getclicky_analytics']);		
 		}
-		if(!empty($config['analytics']['quantcast_analytics'])) {
-			echo insert_quantcast_analytics($config['analytics']['quantcast_analytics']);		
+		if(!empty($config['connections']['quantcast_analytics'])) {
+			echo insert_quantcast_analytics($config['connections']['quantcast_analytics']);		
 		}
 		echo '	
 	</body>
@@ -601,12 +601,12 @@ function insert_favicon($theme = 'default') {
 
 /**
  * -----------------------------------------------------------------------------
- * ANALYTICS
+ * CONNECTIONS - ANALYTICS, DISQUS
  * -----------------------------------------------------------------------------
  */
 
 /**
- * insert_aside
+ * insert_google_analytics
  * 
  * 
  * 
@@ -742,9 +742,64 @@ function insert_favicon($theme = 'default') {
 		return $compete;
 	}
 
+/**
+ * insert_disqus
+ * 
+ * placed wherever comments need to be
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function insert_disqus($disqus_name) {
+		if(empty($disqus_name)) {
+			return false;
+		}
+		$disqus = "
+		<!-- disqus commenting -->
+		<div id=\"disqus_thread\"></div>
+		<script type=\"text/javascript\">
+			/**
+			* var disqus_identifier; [Optional but recommended: Define a unique identifier (e.g. post id or slug) for this thread] 
+			*/
+			(function() {
+			var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+			dsq.src = 'http://".$disqus_name.".disqus.com/embed.js';
+			(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+		<noscript>Please enable JavaScript to view the <a href=\"http://disqus.com/?ref_noscript=".$disqus_name."\">comments powered by Disqus.</a></noscript>
+		<a href=\"http://disqus.com\" class=\"dsq-brlink\">blog comments powered by <span class=\"logo-disqus\">Disqus</span></a>
+		";		
+	}
 
-
-
+/**
+ * insert_disqus_comment_count
+ * 
+ * placed right before closing </body> tag
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function insert_disqus_comment_count($disqus_name) {
+		if(empty($disqus_name)) {
+			return false;
+		}
+		$disqus = "
+		<!-- disqus commenting -->
+		<script type=\"text/javascript\">
+			var disqus_shortname = '".$disqus_name."';
+			(function () {
+			var s = document.createElement('script'); s.async = true;
+			s.src = 'http://disqus.com/forums/".$disqus_name."/count.js';
+			(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+		";		
+	}
 
 /**
  * -----------------------------------------------------------------------------
@@ -1226,16 +1281,16 @@ function insert_favicon($theme = 'default') {
 				$listing_style = ' intro_listing';
 				$body = show_article_byline($item);
 				$body .= show_article_summary($item);
-				$body .= $item['intro']; 
+				$body .= '<div class="body">'.$item['intro'].'</div>'; 
 			} elseif(isset($item['body'])) { 
 				$listing_style = ' full_listing';
 				$body = show_article_byline($item);
 				$body .= show_article_summary($item);
-				$body .= $item['body']; 
+				$body .= '<div class="body">'.$item['body'].'</div>'; 
 			} elseif(isset($item['listing'])) {
 				$listing_style = ' summary_listing';
 				$body = show_article_summary($item);
-				$body .= $item['listing'];				
+				$body .= '<div class="body">'.$item['listing'].'</div>';				
 			} elseif(!empty($item['summary'])) {
 				$listing_style = ' summary_listing';
 				$body = show_article_summary($item);

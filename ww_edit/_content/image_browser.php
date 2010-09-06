@@ -67,8 +67,8 @@
 	$all_images = get_images(7);
 	// $author_images = list_images(7,1);
 	
-	$total_pages = $all_images[0]['total_pages'];
-	$total_images = $all_images[0]['total_images'];
+	$total_pages = (!empty($all_images)) ? $all_images[0]['total_pages'] : 0 ;
+	$total_images = (!empty($all_images)) ? $all_images[0]['total_images'] : 0 ;
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">

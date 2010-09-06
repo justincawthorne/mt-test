@@ -218,6 +218,7 @@
 				// generic options
 					$options = explode(",",$setting_data['options']);
 					foreach($options as $option) {
+						$option = trim($option);
 						$selected = ($option == $setting_data['property_value']) ? ' selected="selected"' : '' ; 
 						$form_field .= '
 								<option value="'.$option.'"'.$selected.'>'.$option.'</option>';
@@ -271,7 +272,7 @@
 	
 	$intro['admin'] 	= 'Set the sitewide contact email, alter the timezone, add account details for Twitter, Google Analytics, specify a alternative url.';
 	
-	$intro['analytics'] = 'If you have any analytics accounts add the ids here to automatically switch on tracking for those accounts.';
+	$intro['connections'] = 'If you have any analytics accounts add the ids here to automatically switch on tracking for those accounts. You can also add usernames for selected social media sites here.';
 	
 	$intro['cache'] 	= 'If your site experiences heavy traffic you can switch on caching here.';
 			

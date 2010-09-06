@@ -670,33 +670,9 @@
 		return $data;
 	}
 
-/**
- * get_author_name
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-	function get_author_name($id) {
-		$id = (int)$id;
-		if(empty($id)) {
-			return false;
-		}
-		$conn = reader_connect();
-		$query = "SELECT name 
-					FROM authors
-					WHERE id = ".(int)$id;
-		$result = $conn->query($query);
-		$row = $result->fetch_assoc();
-		$result->close();
-		return $row['name'];
-	}
 
  /**
- * get_author_name
+ * get_author_details
  * 
  * 
  * 
@@ -711,7 +687,7 @@
 			return false;
 		}
 		$conn = reader_connect();
-		$query = "SELECT name, url, summary, biography, email, image, email_is_public
+		$query = "SELECT name, url, summary, biography, email, image, contact_flag
 					FROM authors
 					WHERE id = ".(int)$id;
 		$result = $conn->query($query);
@@ -722,7 +698,7 @@
 
 
 /**
- * list_categories
+ * get_categories_basic
  * 
  * 
  * 
@@ -789,30 +765,7 @@
 		return $data;
 	}
 
-/**
- * get_category_title
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-	
-	function get_category_title($id) {
-		$id = (int)$id;
-		if(empty($id)) {
-			return false;
-		}
-		$conn = reader_connect();
-		$query = "SELECT title 
-					FROM categories
-					WHERE id = ".(int)$id;
-		$result = $conn->query($query);
-		$row = $result->fetch_assoc();
-		$result->close();
-		return $row['title'];
-	}
+
 
 
 
@@ -848,35 +801,9 @@
 		return $data;
 	}
 
-/**
- * get_tag_title
- * 
- * 
- * 
- * 
- * 
- * 
- */	
-
-	function get_tag_title($id) {
-		$id = (int)$id;
-		if(empty($id)) {
-			return false;
-		}
-		$conn = reader_connect();
-		$query = "SELECT title 
-					FROM tags
-					WHERE id = ".(int)$id;
-		$result = $conn->query($query);
-		$row = $result->fetch_assoc();
-		$result->close();
-		return $row['title'];
-	}
-
-
 
 /**
- * list_months
+ * get_months
  * 
  * 
  * 
@@ -908,7 +835,7 @@
 	}
 
 /**
- * list_feeds
+ * get_feeds
  * 
  * 
  * 
@@ -1012,7 +939,8 @@
 					articles.id, 
 				 	articles.title, 
 					articles.url, 
-					articles.summary, 
+					articles.summary,
+					articles.body,
 					articles.date_uploaded, 
 					categories.title AS category_title, 
 					categories.url AS category_url,
@@ -1045,6 +973,23 @@
 		$data = array();
 		while($row = $result->fetch_assoc()) {
 			$row = stripslashes_deep($row);
+			// do we need a summary?
+			if( (empty($row['summary'])) && ($config_layout['list_style'] == 'summary') ) {
+				$row['summary'] = create_summary($row['body']);
+			}
+			// do we need an intro
+			if($config_layout['list_style'] == 'intro') {
+				$row['intro'] = get_intro($row['body']);
+				if(empty($row['intro'])) {
+					$row['intro'] = '<p>'.create_summary($row['body']).'</p>';
+				}
+			}
+			// do we need the full body?
+			if($config_layout['list_style'] != 'full') {
+				unset($row['body']);
+			} else {
+				$row['body'] = convert_relative_urls($row['body']);
+			}
 			// create links
 			$link = ($config_layout['url_style'] == 'blog') 
 				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($row['date_uploaded'])).'/'.$row['url'].'/'
@@ -1053,6 +998,7 @@
 			// get tags
 			$tags = get_article_tags($row['id']);
 			$row['tags'] = (!empty($tags)) ? $tags : '' ;
+			// add page counts
 			$row['total_pages'] = $total_pages;
 			$row['total_found'] = $total_articles;
 			$data[] = $row;
@@ -1296,7 +1242,7 @@
 					authors.name AS author_name, 
 					authors.url AS author_url,
 					authors.email AS author_email,
-					authors.email_is_public, 
+					authors.contact_flag, 
 					articles.seo_title,
 					articles.seo_desc, 
 					articles.seo_keywords,
@@ -1745,7 +1691,7 @@
  */
 	
 	function create_summary($body) {
-		$summary = extract_sentences($body);
+		$summary = extract_sentences($body, 20);
 		return $summary;
 	}
 
@@ -1877,23 +1823,7 @@
 		return $extract;
 	}
 
-/**
- * validate_email
- * 
- * 
- * 
- * 
- * 
- * 
- */
-	
-	function validate_email($email) {
-		$epattern = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})';
-		if (!eregi($epattern, $email)) {
-			return false;
-		}
-		return true;
-	}
+
 	
 /**
  * encode_email

@@ -95,16 +95,17 @@ p, ul, ol, blockquote {
 	background-repeat: no-repeat;
 	background-position: center top;
 }
-
+#header_text a {
+	color: #495961;
+}
 /*
 	--- article ------------------------
 */
 
 #page_header {
-
-overflow: hidden;
+	overflow: hidden;
 	font-weight: bold;
-	color: #aaa;
+	color: #999;
 	border-bottom: solid 1px #eee;
 	margin-bottom: 12px;
 }

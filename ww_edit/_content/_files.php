@@ -53,11 +53,44 @@
 	}	
 
 
-// get main content
-	
-	// any functions
-	
-	// any content generation
+// show a 'portal' page if no folder is selected
+
+	if(!isset($_GET['folder'])) {	
+		
+		// list attachment folders
+		
+		$attachment_folders = get_folders(WW_ROOT."/ww_files/attachments/");
+		
+		// create link list of custom folders
+		
+		$file_folders = get_folders(WW_ROOT."/ww_files/");
+		$exclude = array('_cache','attachments','images');
+		$custom_folders = array();
+		foreach($file_folders as $ff) {
+			if(!in_array($ff, $exclude)) {
+				$custom_folders[] = array(
+					'title' => $ff,
+					'link' => $_SERVER["PHP_SELF"].'?page_name=files&amp;folder='.$ff
+				);
+			}
+		}
+		$right_text = 'files home';
+				
+	} elseif(isset($_GET['folder'])) {
+		
+		$files = get_files(WW_ROOT.'/ww_files/'.$_GET['folder'].'/');
+		$total_files = count($files);
+		$right_text = $total_files.' found';
+		
+	} elseif(isset($_GET['filename'])) {
+		
+		$file_details = get_file_details(WW_ROOT.'/ww_files/'.$_GET['folder'].'/'.$_GET['filename']);
+		$right_text = $_GET['filename'];
+		
+	}
+
+
+// construct page header
 	
 	$left_text = '<a href="'.$_SERVER["PHP_SELF"].'?page_name=files">files</a>';
 	if(isset($_GET['folder'])) {
@@ -66,47 +99,28 @@
 				:  ': '.$_GET['folder'] ;
 	}
 	
-	$right_text = (isset($_GET['filename'])) ? $_GET['filename'] : 'listing' ;
 	$page_header = show_page_header($left_text, $right_text);
 
-
-// get aside content
-
-	// list attachment folders
-	
-	$attachment_folders = get_folders(WW_ROOT."/ww_files/attachments/");
-	
-	// create link list of custom folders
-	
-	$file_folders = get_folders(WW_ROOT."/ww_files/");
-	$exclude = array('_cache','attachments','images');
-	$custom_folders = array();
-	foreach($file_folders as $ff) {
-		if(!in_array($ff, $exclude)) {
-			$custom_folders[] = array(
-				'title' => $ff,
-				'link' => $_SERVER["PHP_SELF"].'?page_name=files&amp;folder='.$ff
-			);
-		}
-	}
-	//sort($att_folders);
-	
-	// any content generation
-
-
-// output main content - into $main_content variable
+// output main content
 
 	$main_content = $page_header;
+
 	
 	if(!isset($_GET['folder'])) {
 		
 	// if no folder selected then summarise all folders
 		
+		// images
+		
 		$main_content .= '
 		
 		<h4>images</h4>
 		
-			<p><a href="'.$_SERVER["PHP_SELF"].'?page_name=images">Manage your images</a></p>
+			<p><a href="'.$_SERVER["PHP_SELF"].'?page_name=images">Manage your images</a></p>';
+			
+		// attachments
+		
+		$main_content .= '	
 		
 		<hr />
 		<h4>attachment folders</h4>';
@@ -122,6 +136,8 @@
 		} else {
 			$main_content .= '<p>No attachments have been uploaded</p>';
 		}
+		
+		// custom folders
 		
 		$main_content .= '
 		<hr />
@@ -141,7 +157,7 @@
 		
 	} else {
 		
-	// get single files details if filename set via url
+		// get single files details if filename set via url
 
 		if(isset($_GET['filename'])) {
 	
@@ -171,13 +187,11 @@
 					<li><strong>date uploaded: </strong>".date('d F Y',$file_details['date_uploaded'])."</li>
 				</ul>";
 	
-	// get file listing if a folder name is set via url
+		// get file listing if a folder name is set via url
 	
 		} elseif(isset($_GET['folder'])) { 
 			
-		
-	
-			$files = get_files(WW_ROOT.'/ww_files/'.$_GET['folder'].'/');
+
 			if(!empty($files)) {
 				
 				$main_content .= build_file_listing($files);
@@ -201,23 +215,18 @@
 		
 	}
 	
-	
-	
-	
-	
-
-
-
 // output aside content - into $aside_content variable
 
-	$aside_content = '
-			<h4>Quick links</h4>
+	$quicklinks = '
 			<ul>
+				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=files">Files</a></li>
 				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=images">Images</a></li>
 				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">Attachments</a></li>
 			</ul>';
 	
 	// show other folders
+	
+	$aside_content = build_snippet('Quick Links', $quicklinks);
 			
 	if(!empty($custom_folders)) {
 		

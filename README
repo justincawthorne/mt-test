@@ -20,27 +20,35 @@ How to set up your test install of Wicked Words
 	then put in your database connection details on lines 21-31
 	
 	
-4	if you downloaded the files directly from github you may not have a ww_files folder in the root directory of wickedwords - if not, create the folliwing folders:
+4	if you downloaded the files directly from github you may not have a ww_files folder
+	if not, create the following folders (in the wickedwords root):
 
-	ww_files
-		/_cache
-		/attachments
-		/images
-			/thumbs
+		ww_files
+			/_cache
+			/attachments
+			/images
+				/thumbs
+				
+	...so you should see the following folders in the root directory:
+	
+		ww_config
+		ww_edit
+		ww_files
+		ww_view
 			
 5	make sure the entire ww_files folder and all its subfolders are writable
 
 
 4	now go to what would be the front page of your site e.g http://www.mywickedwords.com/
 	
-	you should see a prompt to create tables - follow the link and it'll create your tables
+	you should see a prompt to create tables - follow the link and it'll create your database tables
 	
-	you'll also be prompted to create an author
+	you'll also be prompted to create an author (i.e. admin user)
 
 
 5	once all that's done you'll be given a link back to the front page of your site
 
-	from there you can append '/admin/' to the url (e.g. http://www.mywickedwords.com/admin/)and log into the 'editroom' to start playing around and uploading stuff
+	from there you can append '/admin/' to the url (e.g. http://www.mywickedwords.com/admin/) and log into the 'editroom' to start playing around and uploading stuff
 	
 	
 6	enjoy!

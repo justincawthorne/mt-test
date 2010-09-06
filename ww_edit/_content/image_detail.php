@@ -46,7 +46,7 @@
 // now bring in our functions	
 	
 	include_once(WW_ROOT.'/ww_config/model_functions.php');
-	include_once(WW_ROOT.'/ww_config/controller_functions.php');
+	include_once(WW_ROOT.'/ww_config/combined_functions.php');
 	include_once(WW_ROOT.'/ww_config/author_controller_functions.php');
 	include_once(WW_ROOT.'/ww_config/author_view_functions.php');
 	

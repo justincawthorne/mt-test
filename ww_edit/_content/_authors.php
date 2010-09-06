@@ -3,14 +3,94 @@
 // page title - if undefined the site title is displayed by default
 
 	$page_title = 'Authors';
+	
+	require('_snippets/class.phpmailer-lite.php');
 
 
-// get main content
+// contributors can only select themselves, so let's lock down the author id url parameter
 	
-	// any functions
+	if( ( (!empty($_SESSION[WW_SESS]['guest'])) && ($_SESSION[WW_SESS]['level'] == 'contributor') ) 
+		|| (!isset($_GET['author_id'])) ) {
+		
+		$_GET['author_id'] = $_SESSION[WW_SESS]['user_id'];
+			
+	}
+
+// process post actions
 	
-	$author_id = (isset($_GET['author_id'])) ? (int)$_GET['author_id'] : $_SESSION[WW_SESS]['user_id'] ;
+	// insert author
+
+	if( (isset($_POST['add_author'])) && ($_POST['add_author'] == 'add') ) {
+		$insert_status = insert_author();
+		if(is_int($insert_status)) {
+			$reload = $_SERVER["PHP_SELF"].'?page_name=authors&author_id='.$insert_status;
+			header('Location: '.$reload);	
+			echo $reload;		
+		} else {
+			$insert_error = $insert_status;
+		}
+		
+	}
+	
+	// update author
+
+	if( (isset($_POST['update_author'])) && ($_POST['update_author'] == 'update') ) {
+
+		$author_id = (int)$_GET['author_id'];
+		$update_status = update_author($author_id);
+		if($update_status === true) {
+			header('Location: '.$url);
+		} else {
+			$error = $update_status;
+		}
+		
+	}
+
+	// change password
+
+	if( (isset($_POST['change_password'])) && ($_POST['change_password'] == 'change') ) {
+		
+		$author_id = (int)$_GET['author_id'];
+		$change_status = change_author_password($author_id);
+		if($change_status === true) {
+			$reload = $_SERVER["PHP_SELF"].'?page_name=authors&author_id='.$author_id.'&passwordchanged';
+			header('Location: '.$reload);
+		} else {
+			$error = 'Error changing password: '.$change_status;
+		}
+		
+	}
+
+	// delete author
+	
+	if( (isset($_POST['confirm_delete_author'])) && ($_POST['confirm_delete_author'] == 'Yes') ) {
+		
+		$author_id = (int)$_GET['author_id'];
+		$delete_status = delete_author($author_id);
+		if($delete_status === true) {
+			$reload = $_SERVER["PHP_SELF"].'?page_name=authors';
+			header('Location: '.$reload);
+		} else {
+			$error = $delete_status;
+		}
+	}
+
+	// author list
+	
+	$author_id = (isset($_GET['author_id'])) ? (int)$_GET['author_id'] : $_SESSION[WW_SESS]['user_id'] ;	
+	
 	$author = get_author($author_id);
+	
+	// check if author has written any articles
+	
+	$usage 	= get_articles_stats(1);
+	
+	// redirect if author details not found
+	
+	if(empty($author)) {
+		$reload = $_SERVER["PHP_SELF"].'?page_name=authors';
+		header('Location: '.$reload);		
+	}
 	
 	// any content generation
 	
@@ -18,26 +98,73 @@
 	$right_text = $author['level'];
 	$page_header = show_page_header($left_text, $right_text);
 	
-	$edit_author_form = '
-		<form action="'.$_SERVER["PHP_SELF"].'?page=authors" method="post" enctype="multipart/form-data" name="edit_author_form">
+	$main_content = $page_header;
+	
+	// confirm file delete
+		
+		if( (isset($_GET['action'])) && ($_GET['action'] == 'delete') && (empty($usage)) ) {
+
+			$main_content .= '
+				<h2>Are you sure you want to delete this author?</h2>
+				<form action="'.$action_url.'" method="post" name="confirm_delete_author_form">
+					<input name="confirm_delete_category" type="submit" value="Yes"/>
+					<input name="cancel_delete_category" type="submit" value="No" />
+				</form>
+				<hr />
+				';
+			
+		}
+
+	// errors
+
+		if( (isset($error)) && (!empty($error)) ) {
+			$main_content .= '
+			<p><strong>'.$error.'</strong></p>';
+		}
+		
+	// password change notification
+
+		if(isset($_GET['passwordchanged'])) {
+			$main_content .= '
+			<p><strong>The password for this author has been changed</strong></p>';
+		}
+		
+	// show usage
+		$total_usage = count($usage);
+		$usage_text = ($total_usage == 1) ? $total_usage.' article' : $total_usage.' articles' ;
+		
+		if(!empty($total_usage)) {
+			$usage_text = '
+			<a href="'.$_SERVER["PHP_SELF"].'?page_name=articles&amp;author_id='.$author_id.'">'.$usage_text.'</a>';
+		}
+		
+		$main_content .= '
+		<p>'.$author['name'].' has written '.$usage_text.'.</p>';
+	
+	// contact flag
+	
+		$contact_checked = (!empty($author['contact_flag'])) ? ' checked="checked"' : '' ;
+	
+	$main_content .= '
+		<form action="'.$action_url.'" method="post" enctype="multipart/form-data" id="edit_author_form">
 
 				<p>
-					<label for="author_name">Author Name</label>
-					<input name="author_name" type="text" id="author_name" value="Justin"/>
+					<label for="name">Author Name</label>
+					<input name="name" type="text" value="'.$author['name'].'"/>
 				</p>
 					
 				<p>
-					<label for="author_email">Email Address</label>
-					<input name="author_email" type="text" id="author_email" size="50" value="edpriceishungry@gmail.com"/>
+					<label for="email">Email Address</label>
+					<input name="email" type="text" value="'.$author['email'].'"/>
 				</p>
 				
 				<p>
-					<label for="author_summary">Author Summary</label>
-					<textarea name="author_summary" id="author_summary" cols="56" rows="3"></textarea></p>
+					<label for="summary">Author Summary</label>
+					<textarea name="summary" class="optional" cols="56" rows="3">'.$author['summary'].'</textarea></p>
 					
 				<p>
-					<label for="author_bio">Biography</label>
-					<textarea name="author_bio" id="author_bio" cols="56" rows="13"></textarea>
+					<label for="biography">Biography</label>
+					<textarea name="biography" class="optional" cols="56" rows="13">'.$author['biography'].'</textarea>
 				</p>
 				
 				<p>
@@ -47,56 +174,139 @@
 				</p>
 				
 				<p>
-					<label for="email_is_public">Display Email?</label>
-					<select name="email_is_public" id="email_is_public">
-						<option value="1">Yes</option>
-						<option value="0">No</option>
-					</select>
-				</p>
+					<label for="contact_flag">Contactable?</label>
+					<span class="checkbox">
+						<input type="checkbox" name="contact_flag" value="1"'.$contact_checked.'/>
+					</span>
+				</p>';	
+					
+	if(empty($_SESSION[WW_SESS]['guest'])) {
 		
+		// block/expiry status
+		$current_ts = time();
+		$author_expiry = $author['sub_expiry'];
+		$expiry_ts = strtotime($author_expiry);
+		// default to unblocked
+		$block_checked = '';
 		
+		if( ($author_expiry == '0000-00-00 00:00:00') || (empty($author_expiry)) ) {
+			$block_checked = '';
+		} elseif($current_ts > $expiry_ts) {
+			$block_checked = ' checked="checked"';	
+		}
+		
+		$author_selected = (empty($author['guest_flag'])) ? ' selected="selected"' : '' ;
+		$editor_selected = ($author['guest_areas'] == 'editor') ? ' selected="selected"' : '' ;
+		$contributor_selected = ($author['guest_areas'] == 'contributor') ? ' selected="selected"' : '' ;
+		
+		$main_content .= '
 				<p><label for="author_level">Access Level</label>
-					<select name="author_level" id="access_level">
-						<option value="contributor">Contributor</option>
-						<option value="editor">Editor</option>
-						<option value="author">Author</option>
+					<select name="author_level">
+						<option value="contributor"'.$contributor_selected.'>Contributor</option>
+						<option value="editor"'.$editor_selected.'>Editor</option>
+						<option value="author"'.$author_selected.'>Author</option>
 					</select>
 				</p>
 					
 				<p>
 					<label for="block_author">Block Author</label>
-					<select name="block_author" id="block_author">
-						<option value="1">Author Is Blocked</option>
-						<option value="0">Author Not Blocked</option>
-					</select>
+					<span class="checkbox">
+						<input type="checkbox" name="block_author" value="1"'.$block_checked.'/>
+					</span>
 					<span class="note">Blocking an author sets their subscription expiry date to the current time
 				 - when the author tries to log in they will get a message saying their subscription has expired
 				 and won\'t be able to access the admin site</span>
-				</p>
-					
+				</p>';
+	}	
+		$main_content .= '
 				<p>
 					<label for="last_login">Last Logged In</label>
-					<input name="last_login" type="text" id="last_login" value="2010-07-17 20:09:16" readonly/>
+					<input name="last_login" type="text" value="2010-07-17 20:09:16" readonly="readonly"/>
 				</p>
 				<p>
 					<label for="last_ip">Last IP</label>
-					<input name="last_ip" type="text" id="last_ip" value="203.206.40.48" readonly/>
-				</p>
-				
-				<p><label for="new_pass">New Password</label>
-					<input name="new_pass" type="password" id="new_pass"/>
-				<br />
-					<label for="confirm_new_pass">Confirm</label>
-					<input name="confirm_new_pass" type="password" id="confirm_new_pass" size="20"/>
+					<input name="last_ip" type="text" value="203.206.40.48" readonly="readonly"/>
 				</p>
 				
 				<p>
-					<input type="submit" name="edit_author" value="Update Author" />
+					<span class="note">
+					A confirmation email, containing all the author\'s details, will be sent to both the author and the site admin following submission.
+					</span>
+				</p>
+				<p>
+					<span class="note">
+					<input type="submit" name="update_author" value="update" />
+					</span>
 				</p>
 			
 			</form>
 	';
+	
+	// change password - only for author level (can change any password) or for own password
+	
+	if( (empty($_SESSION[WW_SESS]['guest'])) || ($author_id == $_SESSION[WW_SESS]['user_id']) ) {
+		
+		$main_content .= '
+		<hr />
+		<h4>change password</h4>
+		
+		<form action="'.$action_url.'" method="post" id="change_password_form">
 
+				<p>
+					<label for="old_pass">Current</label>
+					<input name="old_pass" type="password"/>
+				</p>
+
+				<p>
+					<label for="new_pass">New</label>
+					<input name="new_pass" type="password"/>
+				</p>
+				<p>
+					<label for="confirm_pass">Confirm new</label>
+					<input name="confirm_pass" type="password"/>
+				</p>
+				
+				<p>
+					<span class="note">
+					A confirmation email will be sent to the author following a password change.
+					</span>
+				</p>
+				<p>
+					<span class="note">
+					<input type="submit" name="change_password" value="change" />
+					</span>
+				</p>
+			
+			</form>';
+			
+		}
+		
+	// delete an author
+	
+			$main_content .= '
+			<hr />
+			<h4>delete author</h4>';
+			
+		if(!empty($usage)) {
+			
+			$main_content .= '
+			<p>There are articles currently attached to this author, therefore this author cannot be deleted. If you wish to prevent them having further access to the site you can use the form above to block the author. Alternatively, if you reassign all of this author\'s articles to another current author you will be able to proceed with deleting them.</p>';
+			
+		} else {
+
+			$main_content .= '
+			<form action="'.$action_url.'" method="get" id="delete_author_form">
+				<p>
+					<span class="note">
+					<input type="hidden" name="page_name" value="authors"/>
+					<input type="hidden" name="author_id" value="'.$author_id.'"/>
+					<input name="action" type="submit" value="delete"/>
+					</span>
+				</p>
+			</form>
+				';
+			
+		}
 
 // get aside content
 
@@ -106,27 +316,35 @@
 	
 	// any content generation
 	
-	$add_author_form = '
-			<form action="'.$_SERVER["PHP_SELF"].'?page=authors" method="post" id="add_author_form">
+	$add_author_form = '';
+	
+	if( (isset($insert_error)) && (!empty($insert_error)) ) {
+		$add_author_form .= '
+		<p><strong>'.$insert_error.'</strong></p>';
+	}
+	
+	$add_author_form .= '
+			<form action="'.$action_url.'" method="post" id="add_author_form">
 		
-				<p><label for="author_name">Author name:</label> 
-					<input name="author_name" id="author_name" size="20" type="text"/>
+				<p><label for="name">Author name:</label> 
+					<input name="name" size="20" type="text"/>
 				</p>
 			
 				
-				<p><label for="author_email">Email address:</label> 
-					<input name="author_email" id="author_email" size="20" type="text"/>
+				<p><label for="email">Email address:</label> 
+					<input name="email" size="20" type="text"/>
 				</p>
 				
 				<p><label for="author_level">Access Level:</label>
-					<select name="author_level" id="access_level">
+					<select name="author_level">
 						<option value="contributor">Contributor</option>
 						<option value="editor">Editor</option>
 						<option value="author">Author</option>
 					</select>
 				</p>
-	
-			<input name="add_author" value="Add Author" type="submit"/>
+				<p>
+					<input name="add_author" value="add" type="submit"/>
+				</p>
 			</form>
 			';
 			
@@ -138,26 +356,31 @@
 				</li>
 				<li>
 					<strong>Editor</strong><br />
-					access to write/edit all articles (no access to settings)
+					access to write/edit all articles, manage authors, categories, tags, images and attachments
+					<br /><em>no access to files, links or settings</em>
 				</li>
 				<li>
-					<strong>Author</strong><br />
-					access to write/edit own articles only (no access to settings)
+					<strong>Contributor</strong><br />
+					access to write/edit own articles, images and attachments only
+					<br /><em>no access to authors (excepting own details), categories, tags, files, links or settings</em>
 				</li>
 			</ul>
 		';	
 
 
-// output main content - into $main_content variable
-
-	$main_content = $page_header;
-	$main_content .= $edit_author_form;
-
 
 // output aside content - into $aside_content variable
-
-	$aside_content = build_snippet('Authors',$author_list);
-	$aside_content .= build_snippet('Add an author',$add_author_form);
+	if(empty($_SESSION[WW_SESS]['guest'])) {
+		
+		$aside_content = build_snippet('Authors',$author_list);
+		$aside_content .= build_snippet('Add an author',$add_author_form);
+		
+	} elseif($_SESSION[WW_SESS]['level'] == 'editor') {
+		
+		$aside_content = build_snippet('Authors',$author_list);
+		
+	}	
+	
 	$aside_content .= build_snippet('Access levels',$author_levels_text);
 
 ?>

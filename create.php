@@ -154,7 +154,7 @@ include_once('ww_config/model_functions.php');
 	  last_ip varchar(16) default NULL,
 	  last_sess varchar(32) default NULL,
 	  image varchar(35) default NULL,
-	  email_is_public tinyint(1) default 0,
+	  contact_flag tinyint(1) default 0,
 	  PRIMARY KEY  (id)
 	) ENGINE=MyISAM  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
 	";
@@ -284,18 +284,21 @@ include_once('ww_config/model_functions.php');
 
 	$settings_insert = "
 	REPLACE INTO settings (element_name, property_name, property_value, default_value, formtype, options, summary) VALUES
+	('admin', 'shutdown', '0', '0', 'checkbox', NULL, 'use this to temporarily suspend public access to your site - a message will be displayed on the front page'),
 	('admin', 'email', 'wickedwordscms@gmail.com', 'wickedwordscms@gmail.com', 'text', NULL, 'An admin email address, mainly used for comment moderation. Overwritten for articles by the article author.'),
-	('admin', 'redirect_url', '', NULL, 'text', NULL, 'If you''re using mod_rewrite to point to a different (virtual) directory than the one wickedwords is stored in then enter the full URL suffix here (NOTE must not end with one)'),
-	('admin', 'timezone', 'Australia/Perth', 'Europe/London', 'text', NULL, 'see http://php.net/manual/en/timezones.php for supported values (this setting will be ignored if you don\'t have permission to set the timezone on your mysql database'),
+	('admin', 'redirect_url', '', NULL, 'text', NULL, 'If you\'re using mod_rewrite to point to a different (virtual) directory than the one wickedwords is stored in then enter the full URL suffix here (NOTE must not end with one)'),
+	('admin', 'timezone', 'Australia/Perth', 'Europe/London', 'text', NULL, 'see <a href=\"http://php.net/manual/en/timezones.php\">http://php.net/manual/en/timezones.php</a> for supported values (this setting will be ignored if you don\'t have permission to set the timezone on your mysql database'),
+	('admin', 'feed_url', '', '', 'text', NULL, 'alternative URL for rss feed if using feedburner or similar'),
+	('admin', 'show_all_feeds', '1', '1', 'checkbox', NULL, 'show all available feeds (if no then only the link for the main feed is shown'),
+	('admin', 'complete_feed', '1', '1', 'checkbox', NULL, 'show complete article in feed (if no only a summary is shown)'),
 	('site', 'title', 'Wicked Words', 'Wicked Words', 'text', NULL, 'the title of your site'),
 	('site', 'subtitle', 'A new site powered by Wicked Words, an Evil Chicken production', 'A new site powered by Wicked Words, an Evil Chicken production', 'textarea', NULL, 'a tagline, or subtitle, for your site'),	
 	('site', 'theme', '/default', '/default', 'select', NULL, 'theme to use for site'),	
 	('site', 'doctype', 'xhtml11', 'xhtml11', 'select', 'xhtml10,xhtml11,html5', 'the doctype for your site'),
-	('site', 'html_lang', 'en', 'en', 'select', 'en', 'the default language for your site'),	
-	('site', 'feed_url', '', '', 'text', NULL, 'alternative URL for rss feed if using feedburner or similar'),
-	('site', 'show_all_feeds', '1', '1', 'checkbox', NULL, 'show all available feeds (if no then only the link for the main feed is shown'),
+	('site', 'html_lang', 'en', 'en', 'select', NULL, 'the default language for your site'),	
+	('site', 'xml_namespaces', '', '', 'textarea', NULL, 'enter any additional namespaces you require as a string'),
 	('meta', 'author', 'Wicked Words', 'Wicked Words', 'text', NULL, 'The author of the site. Overwritten on article pages by the article author.'),
-	('meta', 'Content-Type', 'text/html; charset=iso-8859-1', 'text/html; charset=iso-8859-1', 'text', NULL, NULL),
+	('meta', 'Content-Type', 'text/html;charset=UTF-8', 'text/html;charset=UTF-8', 'text', NULL, NULL),
 	('meta', 'description', 'Wicked Words - new installation', 'Wicked Words - new installation', 'textarea', NULL, 'A keyword rich description of your site\'s content'),
 	('meta', 'keywords', 'wicked words, blog, cms', 'wicked words, blog, cms', 'textarea', NULL, 'Any keywords relevant to your site (separated by commas)'),
 	('comments', 'allow_html', '0', '0', 'checkbox', NULL, 'allow html in comments or not'),
@@ -309,17 +312,17 @@ include_once('ww_config/model_functions.php');
 	('files', 'allowed_formats', NULL, NULL, 'text', NULL, 'list of file formats allowed as attachments'),
 	('files', 'podcast_formats', 'mp3,mp4,m4a,m4v,mov,aac,pdf', 'mp3,mp4,m4a,m4v,mov,aac,pdf', 'text', NULL, 'list of file formats compatible with podcasts'),	
 	('front', 'article_id', '0', '', 'select', NULL, 'ID of article to be placed permanently on front page. This overrides all other front page settings.'),
-	('front', 'list_style', 'intro', 'intro', 'select', 'summary, intro, full', 'How much of each article to display on the front page. Only applicable when latestmonth or per_page is selected as front_view'),
+	('front', 'front_list_style', 'intro', 'intro', 'select', 'summary, intro, full', 'How much of each article to display on the front page. Only applicable when latestmonth or per_page is selected as front_view'),
 	('front', 'page_style', 'per_page', 'per_page', 'select', 'latest_post,latest_month,per_page', 'Display options for the first page of your site'),
 	('layout', 'list_style', 'summary', 'summary', 'select', 'basic,summary,intro,full', 'Display options for results pages (or listings pages)'),
 	('layout', 'main_menu', '0', '0', 'select', 'none,titlebar,navbar,aside', 'Position of main menu: none, at top of titlebar; below titlebar (navbar); in column (aside).'),
 	('layout', 'per_page', '20', '20', 'text', NULL, 'Number of posts to show per page.'),
 	('layout', 'url_style', 'cms', 'cms', 'select', 'cms,blog', NULL),	
+	('design', 'site_width', '960', '960', 'text', NULL, 'overall width of site'),
+	('design', 'margins', '10', '10', 'text', NULL, 'space between main content and outer elements (columns)'),	
+	('design', 'title_height', '200', '200', 'text', NULL, 'height of title bar'),
 	('design', 'aside_width', '220', '220', 'text', NULL, 'total width of sidebar'),
 	('design', 'footer_height', '80', '80', 'text', NULL, 'height of footer'),
-	('design', 'margins', '10', '10', 'text', NULL, 'space between main content and outer elements (columns)'),
-	('design', 'site_width', '960', '960', 'text', NULL, 'overall width of site'),
-	('design', 'title_height', '200', '200', 'text', NULL, 'height of title bar'),
 	('cache', 'cache_ext', 'cache', 'cache', 'text', NULL, 'file extension to give cached files'),
 	('cache', 'cache_time', '600', '600', 'text', NULL, 'Caching time in seconds'),
 	('cache', 'caching_on', '0', '0', 'checkbox', NULL, 'Select yes to turn caching on'),
@@ -327,7 +330,8 @@ include_once('ww_config/model_functions.php');
 	('connections', 'compete_analytics', NULL, NULL, 'text', NULL, 'id for compete analytics - https://my.compete.com/'),
 	('connections', 'getclicky_analytics', NULL, NULL, 'text', NULL, 'id for getclicky analytics - http://getclicky.com/'),
 	('connections', 'quantcast_analytics', NULL, NULL, 'text', NULL, 'id for quantcast analytics - http://www.quantcast.com/'),
-	('connections', 'twitter_username', NULL, NULL, 'text', NULL, 'your twitter username - used for the twitter snippet, leave blank if you don\'t want your twitter feed displayed on your site')
+	('connections', 'twitter_username', NULL, NULL, 'text', NULL, 'your twitter username - used for the twitter snippet, leave blank if you don\'t want your twitter feed displayed on your site'),
+	('connections', 'disqus_shortname', NULL, NULL, 'text', NULL, 'if you have a Disqus account enter the short name here to have disqus process all comments on the site')
 	;
 	";
 
@@ -362,7 +366,7 @@ include_once('ww_config/model_functions.php');
 	
 // insert settings data if the settings table is empty
 
-	$settings_query = "SELECT COUNT(id) as total FROM settings";
+	$settings_query = "SELECT COUNT(property_name) as total FROM settings";
 	$settings_result = $conn->query($settings_query);
 	$settings_rows = $settings_result->fetch_assoc();
 	$settings_total = $settings_rows['total'];

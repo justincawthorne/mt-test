@@ -9,7 +9,20 @@
 	
 	// any functions
 	
-	$articles = get_articles_admin();
+	/* 
+		contributors can only see their own articles
+		authors and editors have access to all articles
+	*/
+	
+	
+	if( (!empty($_SESSION[WW_SESS]['guest'])) && ($_SESSION[WW_SESS]['level'] == 'contributor') ) {
+		
+		$_GET['author_id'] = $_SESSION[WW_SESS]['user_id'];
+			
+	}
+			
+	$articles =	get_articles_admin();
+			
 	$total_articles = (!empty($articles)) ? $articles[0]['total_found'] : 0 ;
 	$total_pages = (!empty($articles)) ? $articles[0]['total_pages'] : 0 ;
 

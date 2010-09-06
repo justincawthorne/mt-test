@@ -133,8 +133,8 @@
 		
 		$images = get_images($images_per_page);
 		$orphans = get_image_orphans();
-		$total_images = $images[0]['total_images'];
-		$total_pages = $images[0]['total_pages'];
+		$total_images = (!empty($images)) ? $images[0]['total_images'] : 0 ;
+		$total_pages = (!empty($images)) ? $images[0]['total_pages'] : 0 ;
 				
 	}
 	
@@ -142,7 +142,7 @@
 	
 	$left_text = '<a href="'.$_SERVER["PHP_SELF"].'?page_name=files">files</a>';
 	$left_text .= (isset($image)) ? ': <a href="'.$_SERVER["PHP_SELF"].'?page_name=images">images</a>' : ': images' ;
-	$right_text = (isset($image)) ? $image['filename'] : 'listing' ;
+	$right_text = (isset($image)) ? $image['filename'] : $total_images.' found' ;
 	$page_header = show_page_header($left_text, $right_text);
 
 
@@ -475,13 +475,14 @@
 
 // output aside content - into $aside_content variable
 
-	$aside_content = '
-			<h4>Quick links</h4>
+	$quicklinks = '
 			<ul>
+				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=files">Files</a></li>
 				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=images">Images</a></li>
 				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=attachments">Attachments</a></li>
-				<li><a href="'.$_SERVER["PHP_SELF"].'?page_name=files">Files</a></li>
 			</ul>';
+
+	$aside_content = build_snippet('Quick Links', $quicklinks);	
 
 	// upload an image	
 	

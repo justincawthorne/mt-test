@@ -635,7 +635,9 @@ ul.comment_listing li div.comment_actions span.delete_link a{
 #write_article select#minute {
 	width: auto;
 }
-
+#write_article textarea#summary {
+	width: 518px;
+}
 #main_content form ul.checkbox_list,
 #main_content form ul.radio_list {
 	float: left;
@@ -721,11 +723,10 @@ form#image_details {
 	color: #666;
 	display: inline-block;
 	float: right;
-	line-height: 26px;
+	line-height: 18px;
 	width: 240px;
-	padding: 0 4px 0 12px;
-	border: solid 1px #fff;
-	-moz-box-shadow: inset 2px 2px 4px #ccc;
+	padding: 4px 4px;
+	border: dashed 1px #fff;
 }
 
 /* errors */

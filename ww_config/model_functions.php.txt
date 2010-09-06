@@ -10,9 +10,9 @@
  * reader = frontend user | author = admin/backend user
  * 
  * required reader rights: SELECT, INSERT
- * required author rights: SELECT, INSERT, UPDATE, DELETE
+ * required author rights: SELECT, INSERT, UPDATE, DELETE, CREATE
  * 
- * if a seperate reader level mysql account hasn't been created either leave
+ * if a separate reader level mysql account hasn't been created either leave
  * the reader parameters empty or use the same values as the author parameters
  */
 
@@ -26,6 +26,7 @@
 		$conn_param['author']['pass']	= '';
 		
 		// reader username and password
+		// can be left blank in which case the author user/pass will be used
 		$conn_param['reader']['user']	= '';
 		$conn_param['reader']['pass']	= '';
 		// return parameters
@@ -42,8 +43,8 @@
  * set_ww_web_root 	- this is the web address (e.g. http://www.blog.com)
  */
 
-		$set_ww_root 		= ""; // leave blank unless necessary
-		$set_ww_web_root 	= ""; // leave blank unless necessary
+		$set_ww_root 		= ''; // leave blank unless necessary
+		$set_ww_web_root 	= ''; // leave blank unless necessary
 
 /**
  * -----------------------------------------------------------------------------
@@ -138,8 +139,8 @@
 		if($result) {
 			while($row = $result->fetch_assoc()) { 
 				$element = strtolower($row['element_name']);
-				$key 	= $row['property_name'];
-				$data[$element][$key] = $row['property_value'];
+				$key 	= trim($row['property_name']);
+				$data[$element][$key] = trim($row['property_value']);
 			}
 		}
 		return $data;	
@@ -238,13 +239,13 @@
 	if(!empty($config)) {
 	
 		// create an entry for use in the head/title tag
-	 	$config['site']['meta_title'] = $config['site']['title'];
+	 	//$config['site']['meta_title'] = $config['site']['title'];
 		
 		// create a new 'site/meta' node
-		$config['site']['meta'] = $config['meta'];
+		//$config['site']['meta'] = $config['meta'];
 		
 		// remove the original 'meta' node
-	 	unset($config['meta']);
+	 	//unset($config['meta']);
 	
 		// change mysql timezone if needed
 

@@ -675,6 +675,7 @@
 		$row = stripslashes_deep($row);
 		$comments = $comment_result->fetch_assoc();
 		$row['comment_count'] = $comments['total'];
+		$result->close();
 		return $row;
 	}
 
@@ -704,6 +705,7 @@
 		while($row = $result->fetch_assoc()) { 
 			$data[] = $row;
 		}
+		$result->close();
 		return $data;		
 	}
 
@@ -730,6 +732,7 @@
 				WHERE edits.id = ".(int)$edit_id;
 		$result = $conn->query($query);
 		$row = $result->fetch_assoc();
+		$result->close();
 		return $row;		
 	}
 
@@ -758,6 +761,7 @@
 		while($row = $result->fetch_assoc()) { 
 			$data[] = $row['tag_id'];
 		}
+		$result->close();
 		return $data;		
 	}
 
@@ -1473,8 +1477,7 @@
 		if(!$result) {
 			return $conn->error;
 		} else {
-			$url = current_url();
-			header('Location: '.$url);
+			return true;
 		}
 	}
 
@@ -1498,7 +1501,7 @@
 		$query = "DELETE FROM comments WHERE id = ".$comment_id;
 		$result = $conn->query($query);
 		if(!$result) {
-			return false;
+			return $conn->error;
 		} else {
 			return true;
 		}		
@@ -1533,11 +1536,17 @@
 					FROM authors
 					WHERE id = ".(int)$author_id;
 		$result = $conn->query($query);
+		if(!$result) {
+			return false;
+		}
 		$row = $result->fetch_assoc();
+		if(empty($row)) {
+			return false;
+		}
 		$result->close();
 		$level = (empty($row['guest_flag'])) ? 'author' : $row['guest_areas'] ;	
 		$allowed_levels = array('author','editor','contributor');
-		$row['level'] = (!in_array($level,$allowed_levels)) ? 'undefined' : $level ;
+		$row['level'] = (!in_array($level,$allowed_levels)) ? 'contributor' : $level ;
 		return $row;
 	}
 
@@ -1552,7 +1561,66 @@
  */	
 
 	function insert_author() {
-		
+		if(!isset($_POST)) {
+			return false;
+		}
+		if(empty($_POST['name'])) {
+			return 'an author name is required';
+		}
+		if(validate_email($_POST['email']) !== true) {
+			return 'invalid email provided';
+		} else {
+			$email = $_POST['email'];
+		}
+		$conn = author_connect();
+		$name 		= clean_input($_POST['name']);
+		$url 		= create_url_title($name);
+		$summary 	= (isset($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
+		$biography 	= (isset($_POST['biography'])) ? clean_input($_POST['biography']) : '' ;
+		$sub_expiry = (isset($_POST['sub_expiry'])) ? date('Y-m-d H:i:s',strtotime($_POST['sub_expiry'])) : '' ;
+		$contact_flag = ((isset($_POST['contact_flag'])) && (!empty($_POST['contact_flag']))) ? 1 : 0 ;
+		// create a password
+		$pass = ((!isset($_POST['pass'])) && (empty($_POST['pass']))) ? substr(md5(time()),0,8) : $_POST['pass'] ;
+		// access level
+		switch($_POST['author_level']) {
+			case 'author':
+			$guest_flag = 0;
+			$guest_areas = 'author';
+			break;
+			case 'editor':
+			$guest_flag = 1;
+			$guest_areas = 'editor';
+			break;
+			case 'contributor':
+			default:
+			$guest_flag = 1;
+			$guest_areas = 'contributor';
+			break;
+		}
+		$insert = "INSERT INTO authors 
+					(name, url, summary, biography, 
+					email, pass, sub_expiry,
+					guest_flag, guest_areas, contact_flag)
+					VALUES 
+					(
+					'".$conn->real_escape_string($name)."',
+					'".$conn->real_escape_string($url)."',
+					'".$conn->real_escape_string($summary)."',
+					'".$conn->real_escape_string($biography)."',
+					'".$conn->real_escape_string($email)."',
+					'".$conn->real_escape_string($pass)."',
+					'".$conn->real_escape_string($sub_expiry)."',
+					".(int)$guest_flag.",
+					'".$conn->real_escape_string($guest_areas)."',
+					".(int)$contact_flag."
+					)";
+		$result = $conn->query($insert);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			$new_id = $conn->insert_id;
+			return $new_id;
+		}		
 	}
 	
 /**
@@ -1566,9 +1634,164 @@
  */	
  	
 	function update_author($author_id) {
-		
+		if(!isset($_POST)) {
+			return false;
+		}
+		if(empty($_POST['name'])) {
+			return 'an author name is required';
+		}
+		if(validate_email($_POST['email']) !== true) {
+			return 'invalid email provided';
+		} else {
+			$email = $_POST['email'];
+		}
+		$conn = author_connect();
+		$name 		= clean_input($_POST['name']);
+		$url 		= create_url_title($name);
+		$summary 	= (isset($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
+		$biography 	= (isset($_POST['biography'])) ? clean_input($_POST['biography']) : '' ;
+		$contact_flag = ((isset($_POST['contact_flag'])) && (!empty($_POST['contact_flag']))) ? 1 : 0 ;
+		// update for non-author level
+		if(!empty($_SESSION[WW_SESS]['guest'])) {
+			$update = "UPDATE authors SET
+						name = '".$conn->real_escape_string($name)."',
+						url = '".$conn->real_escape_string($url)."',
+						email = '".$conn->real_escape_string($email)."',
+						summary = '".$conn->real_escape_string($summary)."',
+						biography = '".$conn->real_escape_string($biography)."',
+						contact_flag = ".(int)$contact_flag."
+					WHERE id = ".(int)$author_id;
+		} else {
+			// set expiry date
+			$expiry_date = (!empty($_POST['block_author'])) ? date('Y-m-d H:i:s',strtotime('yesterday')) : '0000-00-00 00:00:00' ;
+			// set author level
+			switch($_POST['author_level']) {
+				case 'author':
+				$guest_flag = 0;
+				$guest_areas = 'author';
+				break;
+				case 'editor':
+				$guest_flag = 1;
+				$guest_areas = 'editor';
+				break;
+				case 'contributor':
+				default:
+				$guest_flag = 1;
+				$guest_areas = 'contributor';
+				break;
+			}
+		// query for editor/contributor level
+			$update = "UPDATE authors SET
+						name = '".$conn->real_escape_string($name)."',
+						url = '".$conn->real_escape_string($url)."',
+						email = '".$conn->real_escape_string($email)."',
+						summary = '".$conn->real_escape_string($summary)."',
+						biography = '".$conn->real_escape_string($biography)."',
+						contact_flag = ".(int)$contact_flag.",
+						sub_expiry = '".$conn->real_escape_string($expiry_date)."',
+						guest_flag = ".(int)$guest_flag.",
+						guest_areas = '".$conn->real_escape_string($guest_areas)."'
+					WHERE id = ".(int)$author_id;
+		}
+		// now run query
+		$update_result = $conn->query($update);
+		if(!$update_result) {
+			return $conn->error;
+		} else {
+			// get config settings
+			$config = get_settings();
+			// send an email to the user
+			$mail = new PHPMailerLite();
+			$mail->SetFrom($config['admin']['email'], $config['site']['title']);
+			$mail->AddAddress($author['email'], $author['name']);
+			$mail->AddAddress($config['admin']['email'], $config['site']['title'].' admin');
+			$mail->Subject = "Your author details for ".$config['site']['title']." have been changed";
+			$mail->Body = "Dear ".$name.","."\n\n";
+			$mail->Body .= "Your details for ".$config['site']['title']." have been changed. Here's everything we have on you:"."\n\n";
+			$mail->Body .= "\t"."Name: "."\n\t\t".$name."\n\n";
+			$mail->Body .= "\t"."Email address: "."\n\t\t".$email."\n\n";
+			$mail->Body .= (!empty($summary)) ? "\t"."Summary: "."\n\t\t".$summary."\n\n" : '' ;
+			$mail->Body .= (!empty($biography)) ? "\t"."Biography: "."\n\t\t".$biography."\n\n" : '' ;
+			$mail->Body .= "\t"."Access level: "."\n\t\t".$_POST['author_level']."\n\n";
+			$block_status .= (!empty($_POST['block_author'])) ? " DO NOT" : '' ;
+			$mail->Body .= "\t"."You currently".$block_status." have access to the site"."\n\n";
+			$contact_status .= (empty($contact_flag)) ? " NOT" : '' ;
+			$mail->Body .= "\t"."You are currently".$contact_status." contactable by readers of the site"."\n";
+			$mail->Send();
+			return true;
+		}	
 	}
-	
+
+/**
+ * change_password
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+ 	
+	function change_author_password($author_id) {
+		if(!isset($_POST)) {
+			return false;
+		}
+		$author_id = (int)$author_id;
+		if(empty($author_id)) {
+			return false;
+		}
+		if(empty($_POST['old_pass'])) {
+			return 'old password must be entered';
+		}
+		if(empty($_POST['new_pass'])) {
+			return 'new password must be entered';
+		}
+		if(empty($_POST['confirm_pass'])) {
+			return 'confirm password must be entered';
+		}
+		// check new pass and confirm pass match
+		$new_check = (strcmp($_POST['new_pass'],$_POST['confirm_pass']) == 0) ? 1 : 0 ;
+		if(empty($new_check)) {
+			return 'new pass and confirm pass do not match';
+		}
+		// get existing password
+		$conn = reader_connect();
+		$query = "SELECT pass, email, name
+					FROM authors
+					WHERE id = ".(int)$author_id;
+		$result = $conn->query($query);
+		$author = $result->fetch_assoc();
+		$result->close();
+		if(empty($author)) {
+			return 'selected author not found';
+		}
+		$password_check = (strcmp($_POST['old_pass'],$author['pass']) == 0) ? 1 : 0 ;
+		if(empty($password_check)) {
+			return 'existing password incorrect';
+		}
+		// we can now proceed
+		$update = "UPDATE authors SET 
+					pass = '".$conn->real_escape_string($_POST['new_pass'])."'
+					WHERE id = ".(int)$author_id;
+		$update_result = $conn->query($update);
+		if(!$update_result) {
+			return $conn->error;
+		} else {
+			// get config settings
+			$config = get_settings();
+			// send an email to the user
+			$mail = new PHPMailerLite();
+			$mail->SetFrom($config['admin']['email'], $config['site']['title']);
+			$mail->AddAddress($author['email'], $author['name']);
+			$mail->Subject = "Your password for ".$config['site']['title']." has been changed";
+			$mail->Body = "Dear ".$author['name'].","."\n\n";
+			$mail->Body .= "Your password for ".$config['site']['title']." has been changed to:"."\n\n";
+			$mail->Body .= "\t".$_POST['new_pass'];
+			$mail->Send();
+			return true;
+		}
+	}
+
 /**
  * delete_author
  * 
@@ -1928,6 +2151,7 @@
 		while($row = $result->fetch_assoc()) { 
 			$db_list[] = $row['filename'];
 		}
+		$result->close();
 		// get list of images in images folder
 		$image_folder = WW_ROOT.'/ww_files/images/';
 		$files = get_files($image_folder);
@@ -3045,7 +3269,7 @@
 		if(!isset($_POST)) {
 			return 'no post data sent';
 		}
-		if(validate_url($_POST['url'] === false)) {
+		if(validate_url($_POST['url']) === false) {
 			return 'invalid url provided';
 		}
 		$conn = author_connect();

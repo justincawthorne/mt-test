@@ -35,6 +35,11 @@ include_once('../ww_config/view_functions.php');
 		exit();
 	}
 	
+	if(!empty($config['admin']['shutdown'])) {
+		echo 'the site is temporarily closed for maintenance...';
+		exit();		
+	}
+	
 // process url
 
 	$request = process_request();
@@ -78,7 +83,7 @@ include_once('../ww_config/view_functions.php');
 			} else {
 		
 				// determine what content goes on front page, and which list style
-		
+				
 				switch($config['front']['page_style']) {
 					
 					case 'custom':
@@ -102,13 +107,13 @@ include_once('../ww_config/view_functions.php');
 					
 					// use front list style setting
 					$config['layout']['per_page'] = $config_per_page;
-					$config['layout']['list_style'] = $config['front']['list_style'];
+					$config['layout']['list_style'] = $config['front']['front_list_style'];
 					$articles = get_articles($config['layout']);
 					break;
 					
 					case 'per_page':
 					default:
-					$config['layout']['list_style'] = $config['front']['list_style'];
+					$config['layout']['list_style'] = $config['front']['front_list_style'];
 					$articles = get_articles($config['layout']);
 					break;
 				}
