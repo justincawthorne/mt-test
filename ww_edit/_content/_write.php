@@ -83,7 +83,11 @@
 		$main_content .= '
 			<h2>Your article has been '.$article_data['action'].'</h2>
 			<p><strong>Title:</strong> '.stripslashes($article_data['title']).'</p>';
-		
+
+			$main_content .= '
+			<p>
+				<a href="'.$_SERVER["PHP_SELF"].'?page_name=write&amp;article_id='.$article_data['id'].'">Edit your article</a>
+			</p>';		
 		
 		if($status_text == 'postdated') {
 			
@@ -95,8 +99,6 @@
 			$main_content .= '	
 			<p>
 				<a href="'.WW_WEB_ROOT.'/id/'.$article_data['id'].'/">Review your article</a>
-				&#124;
-				<a href="'.$_SERVER["PHP_SELF"].'?page_name=write&amp;article_id='.$article_data['id'].'">Edit your article</a>
 			</p>';
 						
 		} else {

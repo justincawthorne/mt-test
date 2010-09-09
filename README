@@ -27,6 +27,7 @@ How to set up your test install of Wicked Words
 			/_cache
 			/attachments
 			/images
+				/authors
 				/thumbs
 				
 	...so you should see the following folders in the root directory:

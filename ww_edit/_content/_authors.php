@@ -144,8 +144,41 @@
 	// contact flag
 	
 		$contact_checked = (!empty($author['contact_flag'])) ? ' checked="checked"' : '' ;
+		$image_form_content = '';
+		
+		if(!empty($author['image'])) {
+			
+			$main_content .= '	
+			<div style="width:260px; height:auto; float:right;">
+				<a href="#author_image">
+				<img style="float: right; margin-bottom: 12px;" 
+					alt="image for '.$author['name'].'" 
+					title="'.$author['image'].'" 
+					src="'.WW_WEB_ROOT.'/ww_files/images/authors/'.$author['image'].'"/>
+				</a>
+				<a href="#author_thumb">
+				<img style="float: right; margin-bottom: 12px;" 
+					alt="thumbnail image for '.$author['name'].'" 
+					title="'.$author['image'].'" 
+					src="'.WW_WEB_ROOT.'/ww_files/images/authors/th_'.$author['image'].'"/>
+				</a>
+			</div>';
+			
+			$image_form_content = '
+				<p>
+					<label for="delete_author_image">Delete Image</label>
+					<input name="delete_author_image" type="checkbox" value="1" />
+					<span class="note">
+					If you wish to delete the current image without uploading a new one then check this box.<br /><br />
+					image src:<br />'.WW_WEB_ROOT.'/ww_files/images/authors/'.$author['image'].'<br /><br />
+					thumb src:<br />'.WW_WEB_ROOT.'/ww_files/images/authors/th_'.$author['image'].'
+					</span>
+				</p>			
+			';
+					
+		}
 	
-	$main_content .= '
+		$main_content .= '
 		<form action="'.$action_url.'" method="post" enctype="multipart/form-data" id="edit_author_form">
 
 				<p>
@@ -170,8 +203,12 @@
 				<p>
 					<label for="author_image">Image</label>
 					<input name="author_image" type="file" id="author_image" />
-					<span class="note">Any existing image for this author will be deleted if a new one is uploaded.</span>
+					<input name="thumb_width" type="hidden" value="'.$config['files']['thumb_width'].'"/>
+					<input name="current_image" type="hidden" value="'.$author['image'].'"/>
+					<span class="note">Your image will be uploaded at its original size, but a thumbnail will also be created ('.$config['files']['thumb_width'].'px wide). Any existing image for this author will be deleted if a new one is uploaded.</span>
 				</p>
+				
+				'.$image_form_content.'
 				
 				<p>
 					<label for="contact_flag">Contactable?</label>

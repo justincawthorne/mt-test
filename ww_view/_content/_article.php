@@ -2,7 +2,7 @@
 
 // meta tags for head section
 
-	$article_meta_title = (!empty($article['seo_title'])) ? $article['seo_title'] : $article['title'].' '.$config['site']['title'] ;
+	$article_meta_title = (!empty($article['seo_title'])) ? $article['seo_title'] : $article['title'].' - '.$config['site']['title'] ;
 	$config['site']['meta_title'] = $article_meta_title;
 	$config['site']['meta']['description'] = (!empty($article['seo_desc'])) ? $article['seo_desc'] : $article['summary'] ;
 	$config['site']['meta']['keywords'] = (!empty($article['seo_keywords'])) ? $article['seo_keywords'] : $config['meta']['keywords'] ;
@@ -17,10 +17,8 @@
 	if(empty($disable_comments)) {
 		
 		$post_errors = (isset($_POST['submit_comment'])) 
-			? validate_comment($config['comments']['form_protection'], $article['id']) 
+			? validate_comment($config['comments']['form_protection'], $article) 
 			: '' ;
-			
-		debug_array($post_errors);
 		
 	}
 	
@@ -56,7 +54,17 @@
 
 	if(empty($disable_comments)) {
 		
-		echo show_comment_form($config['comments'], $article['id'], $post_errors);
+		if(empty($config['connections']['disqus_shortname'])) {
+			
+			echo show_comment_form($config['comments'], $article['id'], $post_errors);			
+		
+		} else {
+			
+			echo insert_disqus($config['connections']['disqus_shortname']);
+			
+		}
+		
+
 	
 	}
 /*	

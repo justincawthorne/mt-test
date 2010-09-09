@@ -113,6 +113,13 @@
 		$usage = (empty($category['category_id'])) 
 			? $categories_list[$category_id]['total'] 
 			: $categories_list[$category['category_id']]['child'][$category_id]['total'] ;	
+
+	// show errors
+	
+		if( (isset($error)) && (!empty($error)) ) {
+			$main_content .= '
+			<p><strong>'.$error.'</strong></p>';
+		}
 		
 	// build edit form
 		

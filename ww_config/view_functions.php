@@ -188,7 +188,8 @@ function declare_meta($meta = array()) {
 					'Content-Type','Date','Expires','Last-Modified',
 					'Location','Refresh','Set-Cookie','WWW-Authenticate');
 	$metatags = '
-	<!-- meta tags -->';
+	<!-- meta tags -->
+	';
 	foreach($meta as $name => $content) {
 		if(in_array($name,$equiv)) {
 		$metatags .= '
@@ -212,22 +213,31 @@ function declare_meta($meta = array()) {
  */	
 
 function insert_links($links_array = array()) {
-	$links = '
+	$link_html = '
 	<!-- links -->
-	<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="'.WW_WEB_ROOT.'/rss/" />';
+	
+	<link rel="alternate" type="application/rss+xml" title="Main Feed - RSS 2.0" href="'.WW_WEB_ROOT.'/rss/" />';
+	// check for head links in the links table
+	$head_links = get_links('site_head');
+	if(!empty($head_links)) {
+		foreach($head_links['site_head'] as $cat => $data){
+			$link_html .= '
+	<link '.htmlspecialchars_decode($data['attributes']).' title="'.$data['title'].'" href="'.$data['url'].'" />';
+		}
+	}
 	if(empty($links_array)) {
-		return $links."\n";
+		return $link_html;
 	}
 	// otherwise loop through supplied links
 	foreach($links_array as $h_link) {
-		$links .= '
+		$link_html .= '
 	<link';
 		foreach($h_link as $attr => $val) {
-			$links .= ' '.$attr.'="'.$val.'"';
+			$link_html .= ' '.$attr.'="'.$val.'"';
 		}
-		$links .= ' />';
+		$link_html .= ' />';
 	}
-	return $links."\n";
+	return $link_html."\n";
 }
 
  
@@ -334,15 +344,17 @@ function insert_js($theme = 'default') {
     // browse for js files in the current theme folder
     $theme_folder = "/ww_view/themes".$theme;
 	$list_js = get_files(WW_ROOT.$theme_folder.'/_js/','js');
-    if($list_js == false) {
+    if($list_js != false) {
 		foreach($list_js as $add_js) {
 	    	$js .= '
 		<script type="text/javascript" src="'.$add_js['link'].'"></script>';
     	}
 	}
-	// add general js
-	$js .= '
-	<script type="text/javascript" src="'.WW_REAL_WEB_ROOT.'/ww_view/_js/general.js"></script>';
+	// add default js if themed version not included
+	if(!file_exists(WW_ROOT.$theme_folder.'/_js/default.js')) {
+		$js .= '
+		<script type="text/javascript" src="'.WW_REAL_WEB_ROOT.'/ww_view/_js/default.js"></script>';		
+	}
     return $js;
 }
 
@@ -403,16 +415,18 @@ function insert_favicon($theme = 'default') {
 		<div id="inner_wrapper">';
 		
 		// header
-		$panel = (isset($config['site']['panel'])) ? $config['site']['panel'] : '' ;
+		$panel 	= (!empty($config['site']['header_panel'])) ? $config['site']['header_panel'] : '' ;
+		$nav	= ($config['layout']['main_menu'] == 'header') ? insert_nav() : '' ;
 		echo (!empty($body_content['header'])) 
 			? $body_content['header'] 
-			: insert_header($config['site']['title'],$config['site']['subtitle'], $panel) ;
+			: insert_header($config['site']['title'],$config['site']['subtitle'], $panel, $nav) ;
 
-		
-		// nav - only insert automatically if nav_top is set to true
-		echo (!empty($body_content['nav']))
+		// nav - only insert automatically if main_menu position is set to 'navbar'
+		if($config['layout']['main_menu'] == 'navbar') {
+			echo (!empty($body_content['nav']))
 			? $body_content['nav']
-			: insert_nav() ;
+			: insert_nav() ;			
+		}
 		
 		// start content wrapper		
 		echo '	
@@ -438,6 +452,9 @@ function insert_favicon($theme = 'default') {
 			: insert_footer() ;
 		
 		// analytics
+		if(!empty($config['connections']['woopra_analytics'])) {
+			echo insert_woopra_analytics();		
+		}
 		if(!empty($config['connections']['compete_analytics'])) {
 			echo insert_compete_analytics($config['connections']['compete_analytics']);		
 		}
@@ -446,6 +463,9 @@ function insert_favicon($theme = 'default') {
 		}
 		if(!empty($config['connections']['quantcast_analytics'])) {
 			echo insert_quantcast_analytics($config['connections']['quantcast_analytics']);		
+		}
+		if(!empty($config['connections']['disqus_shortname'])) {
+			echo insert_disqus_comment_count($config['connections']['disqus_shortname']);
 		}
 		echo '	
 	</body>
@@ -469,12 +489,14 @@ function insert_favicon($theme = 'default') {
  * 
  */	
 
-	function insert_header($title = '', $subtitle = '', $panel = '') {
+	function insert_header($title = '', $subtitle = '', $panel = '', $nav = '') {
 		$header = '
 		<!-- header section -->
 		<div id="header">
 		
 		<div id="header_content">
+
+			'.$nav.'
 
 			<div id="header_text">
 				<p>
@@ -510,17 +532,21 @@ function insert_favicon($theme = 'default') {
  * 
  */	
 
-	function insert_nav($nav_links = array()) {
-		if(empty($nav_links)) {
-			// function to get nav links
+	function insert_nav() {
+		$menu_links = get_links('site_menu');
+		if(empty($menu_links)) {
+			return;
 		}
 		$nav = '
 			<!-- nav section -->
 			<div id="nav">
 			<ul id="nav_links">';
-		foreach($nav_links as $link) {
-			echo '
-				<li><a href="'.$link['url'].'" title="'.$link['summary'].'">'.$link['title'].'</a></li>
+		foreach($menu_links['site_menu'] as $cat => $data) {
+			$title_attr = (!empty($data['summary'])) ? $data['title'].' - '.$data['summary'] : $data['title'] ;
+			$nav .= '
+				<li>
+					<a href="'.$data['url'].'" title="'.$title_attr.'">'.$data['title'].'</a>
+				</li>
 			';
 		}	
 		$nav .= '
@@ -551,6 +577,35 @@ function insert_favicon($theme = 'default') {
 	}
 
 /**
+ * import asides
+ * 
+ * usage: $aside_snippet = import_asides($config['site']['theme']);
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function import_asides($theme) {
+		$theme_asides_folder = WW_ROOT.'/ww_view/themes'.$theme.'/_asides/';
+		$aside_files = get_files($theme_asides_folder);
+		if(empty($aside_files)) {
+			return;
+		}
+		foreach($aside_files as $aside_import) {
+
+			$aside_title = basename($aside_import['filename'],".php");
+			ob_start();
+			include($aside_import['path'].$aside_import['filename']);
+			${$aside_import['filename']} = ob_get_contents();
+			ob_end_clean();
+			$aside_snippet[$aside_title] = ${$aside_import['filename']};
+
+		}
+		return $aside_snippet;
+	}
+
+/**
  * insert_aside
  * 
  * 
@@ -561,6 +616,9 @@ function insert_favicon($theme = 'default') {
  */	
 	
 	function insert_aside($aside_content = array()) {
+		if(empty($aside_content)) {
+			include_once(WW_ROOT.'/ww_view/_content/_aside.php');
+		}
 		$aside = '
 		<!-- aside section -->
 		<div id="aside">
@@ -743,6 +801,80 @@ function insert_favicon($theme = 'default') {
 	}
 
 /**
+ * insert_woopra_analytics
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	
+	function insert_woopra_analytics() {
+		$woopra = '
+		<!-- woopra analytics -->
+		<script type="text/javascript" src="//static.woopra.com/js/woopra.v2.js"></script>
+		<script type="text/javascript">
+		woopraTracker.track();
+		</script>
+		<!-- end woopra analytics -->
+		';
+		return $woopra;
+	}
+
+/**
+ * insert_bookmarks
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function insert_bookmarks($title, $link) {
+		// store information about the bookmarking sites here, so we can easily change this later
+		$social_sites = array(
+			"del.icio.us" 	=> "http://del.icio.us/post?url={url}&amp;title={title}",
+			"Digg" 			=> "http://digg.com/submit?phase=2&amp;url={url}&amp;title={title}",
+			"Facebook" 		=> "http://www.facebook.com/sharer.php?u={url}&amp;t={title}",
+			"Google Bookmarks" => "http://www.google.com/bookmarks/mark?op=edit&amp;bkmk={url}&amp;title={title}",
+			"Reddit" 		=> "http://reddit.com/submit?url={url}&amp;title={title}",
+			"StumbleUpon" 	=> "http://www.stumbleupon.com/submit?url={url}&amp;title={title}",
+			"Technorati" 	=> "http://www.technorati.com/faves?add=".WW_WEB_ROOT."",
+			"Twitter"		=> "http://www.twitter.com/home?status=Just+read:+{title}+at+".WW_WEB_ROOT,
+			"Yahoo MyWeb" 	=> "http://myweb2.search.yahoo.com/myresults/bookmarklet?u={url}&amp;t={title}"
+		); 	
+		// start list
+		$bg_pos = 0; // variable for incrementing sb background sprite		
+		$bookmarks_html = "
+			<ul id=\"sharing_bookmarks\">";
+
+		foreach($social_sites as $social_site=>$social_url){
+			
+			// set link to text or icon depending on bookmark_style		
+			$link_text = (empty($icons)) ? $social_site : '' ; 
+			$style = " style=\"background-image:url('".WW_REAL_WEB_ROOT."/ww_view/_img/sb_sprite.gif');background-position: ".$bg_pos."px 0px;\" "; 
+			
+			// replace vars {title} and {url} in $social_url
+			$url = str_replace("{title}",urlencode($title), str_replace("{url}",$link,$social_url) );
+		 
+			$bookmarks_html .=  "
+				<li>
+					<a title=\"Add to ".$social_site."\" 
+						href=\"".$link."\"
+						target=\"_blank\"
+						".$style.">
+					</a>
+				</li>\n";
+				
+			$bg_pos = $bg_pos-22; // each icon is 22px wide in the sprite, so we move the bg 22px each time
+		}
+		$bookmarks_html .=  "
+			</ul>\n";
+		return $bookmarks_html;		
+	}
+
+/**
  * insert_disqus
  * 
  * placed wherever comments need to be
@@ -771,7 +903,8 @@ function insert_favicon($theme = 'default') {
 		</script>
 		<noscript>Please enable JavaScript to view the <a href=\"http://disqus.com/?ref_noscript=".$disqus_name."\">comments powered by Disqus.</a></noscript>
 		<a href=\"http://disqus.com\" class=\"dsq-brlink\">blog comments powered by <span class=\"logo-disqus\">Disqus</span></a>
-		";		
+		";
+		return $disqus;	
 	}
 
 /**
@@ -798,7 +931,8 @@ function insert_favicon($theme = 'default') {
 			(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
 			}());
 		</script>
-		";		
+		";
+		return $disqus;	
 	}
 
 /**
@@ -821,18 +955,34 @@ function insert_favicon($theme = 'default') {
 		if(empty($article)) {
 			return false;
 		}
+
 		update_counters($article['id']);
 		$article_pre_url = ($config['layout']['url_style'] == 'cms') ? $article['category_url'] : date('Y/m/d' ,strtotime($article['date_uploaded'])) ;
 		$article['link'] = WW_WEB_ROOT."/".$article_pre_url."/".$article['url']."/";
 		$article['current_page'] = (!empty($_GET['p'])) ? (int)$_GET['p'] : 0 ;
+		// generate bookmarks
+		$sharing_bookmarks = '';
+		if(!empty($config['connections']['sharing_bookmarks'])) {
+			if(empty($config['connections']['sharing_custom'])) {
+				$sharing_bookmarks = insert_bookmarks($article['title'], $article['link']);
+			} else {
+				$sharing_bookmarks = $config['connections']['sharing_custom'];	
+			}
+		}		
 		// echo insert_page_header();
 		echo show_page_header($article['category_title'], date('d M Y',strtotime($article['date_uploaded'])));
 		echo '
 		<div class="article_wrapper">';
 		echo show_article_title($article);
 		echo show_article_byline($article);
+		if($config['connections']['sharing_position'] == 'article_top') {
+			echo $sharing_bookmarks;
+		}
 		echo show_article_summary($article);
 		echo show_article_body($article);
+		if($config['connections']['sharing_position'] == 'article_footer') {
+			echo $sharing_bookmarks;
+		}
 		echo show_article_attachments($article['attachments']);
 		echo show_article_tags($article['tags']);
 		echo '
@@ -1086,6 +1236,7 @@ function insert_favicon($theme = 'default') {
 		if(empty($article_comments)) {
 			echo '<p>no comments</p>';
 		} else {
+			echo '<div id="comments_wrapper">';
 			foreach($article_comments as $comment) {
 
 				$style = (!empty($comment['author_id'])) ? ' author_comment' : '' ;
@@ -1101,8 +1252,9 @@ function insert_favicon($theme = 'default') {
 				echo (!empty($comment['title'])) ? '<p class="comment_title">'.$comment['title'].'</p>' : '' ;
 				echo '<p class="comment_body">'.$comment['body'].'</p>';
 				// if this isn't already a reply we give the option to reply
-				if(empty($comment['reply_id'])) {
+				if(empty($comment['id'])) {
 					// script
+					
 					echo "
 					<script type=\"text/javascript\">
 					/* <![CDATA[ */
@@ -1112,6 +1264,7 @@ function insert_favicon($theme = 'default') {
 				}
 				echo '</div>';
 			}
+			echo '</div>';
 		}
 	}
 
@@ -1229,7 +1382,6 @@ function insert_favicon($theme = 'default') {
 			<p>
 				<input name="'.$comment_data['token_name'].'" value="'.$comment_data['token_value'].'" type="hidden"/>
 				<input name="reply_id" id="reply_id" type="hidden"/>
-				<input name="article_id" id="article_id" value="'.$article_id.'" type="hidden"/>
 				<input name="submit_comment" id="submit_comment" value="Submit Comment" type="submit"/>
 			</p>
 
@@ -1253,7 +1405,7 @@ function insert_favicon($theme = 'default') {
  * 
  */
  
-	function show_listing($listing_array, $title = '') {
+	function show_listing($listing_array, $title = '', $disqus = '') {
 		$html = '
 		<div id="listing_wrapper">';
 		if(!empty($title)) {
@@ -1267,11 +1419,15 @@ function insert_favicon($theme = 'default') {
 			return $html;
 		}				
 		foreach($listing_array as $item) {
-			if(isset($item['comment_count'])) {
+			if(!empty($disqus)) {
+				$comments = '
+				<a href="'.$item['link'].'#disqus_thread" title="disqus comments for this article">Comments</a>';	
+			} elseif(isset($item['comment_count'])) {
 				$comments = (empty($item['comment_count'])) ? 'no comments' : $item['comment_count'].' comments' ;
 				$comments = ($item['comment_count'] == 1) ? '1 comment' : $comments ;
 				if($item['comment_count'] > 1) {
-					$comments = '<a href="'.$item['link'].'#comments" title="jump to comments for this article">'.$comments.'</a>';
+					$comments = '
+					<a href="'.$item['link'].'#comments" title="jump to comments for this article">'.$comments.'</a>';
 				}				
 			} else {
 				$comments = '';

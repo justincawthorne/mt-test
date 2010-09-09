@@ -400,8 +400,14 @@ ul.links_listing li {
 ul.links_listing li div {
 	float: left;
 }
-ul.links_listing div.link_category {
+ul.links_listing li.link_category {
 	font-weight: bold;
+	padding: 3px 0;
+	border-bottom: none;
+	background-color: #efefef;
+}
+ul.links_listing li.link_category div {
+	margin-left: 4px;
 }
 ul.links_listing div.link_title {
 	float: left;
@@ -685,7 +691,8 @@ ul.comment_listing li div.comment_actions span.delete_link a{
 
 /* image details form */
 
-form#image_details {
+form#image_details,
+form#edit_author_form {
 	width: 410px;
 	float: left;
 }
@@ -713,6 +720,13 @@ form#image_details {
 	background-image: url(_img/yesno_labels.png);
 	background-repeat: no-repeat;
 	background-position: right top;
+}
+#main_content form.settings_form select.select_checkbox {
+	width: 60px;
+	background-color: #FFBFBF;
+}
+#main_content form.settings_form select.opt_yes {
+	background-color: #C6E6C6;
 }
 
 #main_content form.settings_form span.note {

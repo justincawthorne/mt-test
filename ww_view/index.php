@@ -36,7 +36,11 @@ include_once('../ww_config/view_functions.php');
 	}
 	
 	if(!empty($config['admin']['shutdown'])) {
-		echo 'the site is temporarily closed for maintenance...';
+		header('HTTP/1.1 503 Service Temporarily Unavailable',true,503);
+		header('Status: 503 Service Temporarily Unavailable');
+		header('Retry-After: 172800');
+		echo "
+		".$config['site']['title']." is temporarily closed for maintenance...";
 		exit();		
 	}
 	
@@ -149,7 +153,8 @@ include_once('../ww_config/view_functions.php');
 			if(isset($_GET['feed_listing'])) {
 				
 				// for a list of all available feeds we'll borrow the listing page
-				$articles = format_feeds_list();
+				$feeds = get_feeds($config['admin']['show_all_feeds']);
+				$articles = format_feeds_list($feeds);
 				
 			} elseif(!empty($_GET['search'])) {
 				
@@ -180,57 +185,91 @@ include_once('../ww_config/view_functions.php');
 			? $theme_content_folder.'/_'.$_GET['page_name'].'.php'
 			: WW_ROOT.'/ww_view/_content/_'.$_GET['page_name'].'.php';
 
-// at this point we could look for a custom 'index' file in the theme folder	
+
+// at this point we could look for a custom 'builder' file in the theme folder
+
 	
-	/*	reference:
-	$body_content['header'] = '';
-	$body_content['nav'] = '';
-	$body_content['main'] = '';
-	$body_content['aside'] = '';
-	$body_content['footer'] = '';
-	*/
+		/*	reference:
+		$body_content['header'] = '';
+		$body_content['nav'] = '';
+		$body_content['main'] = '';
+		$body_content['aside'] = '';
+		$body_content['footer'] = '';
+		*/
 	
+			
 	// header content - below is just for example
 	
-		// $body_content['header'] = '<div id="header">yeah, header</div>';
+		/* $body_content['header'] = '<div id="header">yeah, header</div>'; */
+		
+		if(file_exists($theme_content_folder.'/_header.php')) {
+		    ob_start();
+			include($theme_content_folder.'/_header.php');
+		    $body_content['header'] = ob_get_contents();
+		    ob_end_clean();	
+		}
 		
 	// nav content - below is just for example
 	
-		// $body_content['nav'] = '<div id="nav">yeah, nav content</div>';
+		/* $body_content['nav'] = '<div id="nav">yeah, nav content</div>'; */
+
+		if(file_exists($theme_content_folder.'/_nav.php')) {
+		    ob_start();
+			include($theme_content_folder.'/_nav.php');
+		    $body_content['nav'] = ob_get_contents();
+		    ob_end_clean();	
+		}
+		
+	// footer content - below is just for example
+		
+		/* $body_content['footer'] = '<div id="footer">test footer</div>'; */
+		
+		if(file_exists($theme_content_folder.'/_footer.php')) {
+			ob_start();
+			include($theme_content_folder.'/_footer.php');
+		    $body_content['footer'] = ob_get_contents();
+		    ob_end_clean();	
+		}
+			
+	// get aside content
+
+		if(file_exists($theme_content_folder.'/_aside.php')) {
+			ob_start();
+			include($theme_content_folder.'/_aside.php');
+		    $body_content['aside'] = ob_get_contents();
+		    ob_end_clean();	
+		}
 	
-	// now buffer main content and insert into a variable
+		//$body_content['aside'] = insert_aside($aside_content);
+		
+	// buffer main content and insert into a variable
 
 	    ob_start();
 		include $content_partial;
 	    $body_content['main'] = ob_get_contents();
 	    ob_end_clean();	
-	    
-	// get aside content
 
-		// default aside content
+
+	/*
+		with a builder file we can use a different html structure
+	*/
+	
+		if(file_exists($theme_content_folder.'/builder.php')) {
+			
+			include($theme_content_folder.'/builder.php');
+			
+		} else {
+
+		// output default head section
 		
-		include_once('../ww_view/_content/_aside.php');
+			$head_content = '';
+			show_head($head_content, $config);
 		
-		// additional theme specific asides?
+		// output default body section
 		
-		if(file_exists($theme_content_folder.'/_aside.php')) {
-			include_once($theme_content_folder.'/_aside.php');
+			show_body($body_content, $config);
+			
 		}
-	
-		$body_content['aside'] = insert_aside($aside_content);
-	
-	// footer content - below is just for example
-		
-		// $body_content['footer'] = '<div id="footer">test footer</div>';
-
-	// output head section
-	
-		$head_content = '';
-		show_head($head_content, $config);
-	
-	// output body section
-	
-		show_body($body_content, $config);
 		
 	} // end checking for $_GET['page_name']
 ?>

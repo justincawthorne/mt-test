@@ -52,6 +52,10 @@
 			}
 		}
 		
+		// meta tag
+		
+		$config['site']['meta_title'] = 'Articles '.implode(', ',$title_text).' - '.$config['site']['title'];
+		
 	}
 	
 	// total results string
@@ -73,7 +77,9 @@
 
 	echo show_page_header($sub_header,$total_articles);
 	
-	echo show_listing($articles, $page_title);
+	$disqus = $config['connections']['disqus_shortname'];
+	
+	echo show_listing($articles, $page_title, $disqus);
 	
 	if($total > $config['layout']['per_page']) {
 		echo show_listing_nav($articles[0]['total_pages'], $config['layout']['per_page']);

@@ -25,22 +25,24 @@ echo '<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
 
 // some parameters and variables
 
-	$show_full_article = 1;		// set to 0 to just include summaries in the feed
 	$this_feed = current_url();	// get url of this page
-	$config['layout']['list_style'] = (empty($show_full_article)) ? 'summary' : 'full' ;	
 	
 // get valid podcast attachment formats
 	
 	$podcast_formats = $config['files']['podcast_formats'];
+	/*
 	if(!empty($podcast_formats)) {
 		$podcast_formats = explode(',',$podcast_formats);
 	}
-
+	*/
+// get complete or partial article
+	
+	$config['layout']['list_style'] = (!empty($config['admin']['complete_feed'])) ? 'full' : 'summary' ;
+	
 // determine what feed to display
-		
+
 	if($_GET['feed'] == 'comments') {
 		
-		$show_full_article = 0;	// we don't need a 'body' section for comments
 		$article_id = (isset($_GET['article_id'])) ? (int)$_GET['article_id'] : 0 ;
 		$feed_content = get_feed_comments($article_id);
 		$feed_description = "comments feed";
@@ -59,16 +61,24 @@ echo '<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
 		// category
 		if( (isset($_GET['category_id'])) && (isset($_GET['category_url'])) ) {
 			$details = get_category_details($_GET['category_id']);
-			$feed_description = ($_GET['feed'] == 'podcast') 
-			? "The ".$details['title']." podcast - hosted by ".$config['site']['title'] 
-			: "Articles filed under ".$details['title'] ;
+			// default description
+			$feed_description = (!empty($details['description'])) 
+				? $details['description']
+				: "Articles filed under the category ".$details['title'] ;
+			// podcast description
+			if($_GET['feed'] == 'podcast'){
+				$feed_description = (!empty($details['description'])) 
+				?  $details['description']
+				: "The ".$details['title']." podcast - hosted by ".$config['site']['title'] ;				
+			}
+
 		}
 		
 		// author
 		if( (isset($_GET['author_id'])) && (isset($_GET['author_url'])) ) {
 			$details = get_author_details($_GET['author_id']);
 			$config['site']['meta']['author'] = $details['name'];
-			$feed_description = "Articles articles by ".$details['name'];
+			$feed_description = "Articles written by ".$details['name'];
 		}
 		
 		// tag
@@ -92,7 +102,7 @@ echo '<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
 		<title>'.$config['site']['title'].'</title>
 		<description>'.$feed_description.'</description>
 		<link>'.WW_WEB_ROOT.'</link>
-		<copyright>'.$config['site']['meta']['author'].'</copyright>
+		<copyright>'.$config['site']['title'].' - '.$config['meta']['author'].'</copyright>
 		<generator>Wicked Words RSS Generator</generator>
 		<atom:link href="'.$this_feed.'" rel="self" type="application/rss+xml" />';
 
@@ -134,21 +144,21 @@ echo '<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
 		}
 	
 	// itunes category	
-		if(!empty($feed_content[0]['category_type'])) {
+		if(!empty($details['type'])) {
 			echo '
-		<itunes:category text="'.$feed_content[0]['category_type'].'"/>';
+		<itunes:category text="'.$details['type'].'"/>';
 		}
 	
 	// itunes subtitle
-		if(!empty($feed_content[0]['category_summary'])) {
+		if(!empty($details['summary'])) {
 			echo '
-		<itunes:subtitle text="'.$feed_content[0]['category_summary'].'"/>';
+		<itunes:subtitle text="'.$details['summary'].'"/>';
 		}
 	
 	// itunes summary
-		if(!empty($feed_content[0]['category_description'])) {
+		if(!empty($details['description'])) {
 			echo '
-		<itunes:summary text="'.$feed_content[0]['category_description'].'"/>';
+		<itunes:summary text="'.$details['description'].'"/>';
 		}
 		echo '
 		<itunes:explicit>no</itunes:explicit>';
@@ -161,9 +171,10 @@ echo '<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
 		$item_title = $item['title'];
 		$item_description = (empty($item['summary'])) ? create_summary($item['body']) : prepare_string($item['summary']) ;
 		$item_body = '';
-		if(!empty($show_full_article)){
+		// show complete article?
+		if(!empty($config['admin']['complete_feed'])){
 			$body_text = "<p><strong>".$item_description."</strong></p>";
-			$body_text = strip_inline_styles($item['body']);
+			$body_text .= strip_inline_styles($item['body']);
 			$item_body = "<content:encoded><![CDATA[".$body_text."]]></content:encoded>";
 		}
 		$item_date = date('r',strtotime($item['date_uploaded']));

@@ -1032,11 +1032,18 @@
 			if(!empty($post_data['tags'])) {
 				update_article_tags($new_id, $post_data['tags']);
 			}
-		// update tags_map table
+		// update attachments table
 			if(!empty($post_data['attachments'])) {
 				update_article_attachments($new_id, $post_data['attachments']);
 			}
-		// update attachments_map table
+		// update edits table and delete autosave cookie if set
+			if(isset($_COOKIE['autosave_new'])) {
+				$edit_id = (int)$_COOKIE['autosave_new'];
+				$update = "
+				UPDATE edits SET article_id = ".(int)$new_id." WHERE id = ".$edit_id;	
+				$conn->query($update);
+				setcookie("autosave_new", "", time()-3600, "/"); // 30 minutes	
+			}
 			return $result;	
 		}
 
@@ -1082,16 +1089,16 @@
 			$result['status'] = $post_data['status'];
 			$result['category_id'] = $post_data['category_id'];
 			$result['date_uploaded'] = $post_data['date_uploaded'];
-			// update tags_map table
-			//if(!empty($post_data['tags'])) {
-				update_article_tags($post_data['id'], $post_data['tags']);
-			//}
-			// update tags_map table
-			//if(!empty($post_data['attachments'])) {
-				update_article_attachments($post_data['id'], $post_data['attachments']);
-			//}
-			return $result;
-		// update attachments_map table			
+		// update tags_map table
+			update_article_tags($post_data['id'], $post_data['tags']);
+		// update attachments_map table
+			update_article_attachments($post_data['id'], $post_data['attachments']);
+		// delete autosave cookie if set
+			$autosave_cookie = 'autosave_'.(int)$post_data['id'];
+			if(isset($_COOKIE[$autosave_cookie])) {
+				setcookie($autosave_cookie, "", time()-3600, "/"); // 30 minutes	
+			}
+			return $result;	
 		}
 
 	}
@@ -1597,10 +1604,28 @@
 			$guest_areas = 'contributor';
 			break;
 		}
+		// add an image if supplied
+		$author_image = '';
+		if(isset($_FILES['author_image'])) {
+			if(empty($_FILES['author_image']['error'])) {
+				$image_file = $_FILES['author_image'];
+				$location = WW_ROOT.'/ww_files/images/authors/';
+				$filename = $url;
+				$image_data = resize_image($image_file, $location, $filename);
+				// add thumbnail
+				$th_filename = 'th_'.$filename;
+				$th_width = $_POST['thumb_width'];
+				resize_image($image_file, $location, $th_filename, $th_width);
+				if(is_array($image_data)) {
+					$author_image = $image_data['filename'];
+				}	
+			}			
+		}
+		// insert data		
 		$insert = "INSERT INTO authors 
 					(name, url, summary, biography, 
 					email, pass, sub_expiry,
-					guest_flag, guest_areas, contact_flag)
+					guest_flag, guest_areas, image, contact_flag)
 					VALUES 
 					(
 					'".$conn->real_escape_string($name)."',
@@ -1612,6 +1637,7 @@
 					'".$conn->real_escape_string($sub_expiry)."',
 					".(int)$guest_flag.",
 					'".$conn->real_escape_string($guest_areas)."',
+					'".$conn->real_escape_string($author_image)."',
 					".(int)$contact_flag."
 					)";
 		$result = $conn->query($insert);
@@ -1651,6 +1677,42 @@
 		$summary 	= (isset($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
 		$biography 	= (isset($_POST['biography'])) ? clean_input($_POST['biography']) : '' ;
 		$contact_flag = ((isset($_POST['contact_flag'])) && (!empty($_POST['contact_flag']))) ? 1 : 0 ;
+		// add an image if supplied
+		$author_image = (isset($_POST['current_image'])) ? clean_input($_POST['current_image']) : '' ;
+		// delete image
+		if( (isset($_FILES['author_image'])) || (!empty($_POST['delete_author_image'])) ) {
+			// delete existing files
+			if(!empty($author_image)) {
+				$location = WW_ROOT.'/ww_files/images/authors/';
+				$main = $location.$author_image;
+				$thumb = $location.'th_'.$author_image;
+				if(file_exists($main)) {
+					unlink($main);
+				}
+				if(file_exists($thumb)) {
+					unlink($thumb);
+				}
+				$author_image = '';
+			}		
+		}
+		// upload new image
+		if(isset($_FILES['author_image'])) {
+			if(empty($_FILES['author_image']['error'])) {
+				echo 'inserting new image<br/>';
+				$image_file = $_FILES['author_image'];
+				$location = WW_ROOT.'/ww_files/images/authors/';
+				$filename = $url;
+				$th_filename = 'th_'.$filename;
+				// add new image
+				$image_data = resize_image($image_file, $location, $filename);
+				// add thumbnail
+				$th_width = $_POST['thumb_width'];
+				resize_image($image_file, $location, $th_filename, $th_width);
+				if(is_array($image_data)) {
+					$author_image = $image_data['filename'];
+				}
+			}			
+		}
 		// update for non-author level
 		if(!empty($_SESSION[WW_SESS]['guest'])) {
 			$update = "UPDATE authors SET
@@ -1659,6 +1721,7 @@
 						email = '".$conn->real_escape_string($email)."',
 						summary = '".$conn->real_escape_string($summary)."',
 						biography = '".$conn->real_escape_string($biography)."',
+						image = '".$conn->real_escape_string($author_image)."',
 						contact_flag = ".(int)$contact_flag."
 					WHERE id = ".(int)$author_id;
 		} else {
@@ -1687,6 +1750,7 @@
 						email = '".$conn->real_escape_string($email)."',
 						summary = '".$conn->real_escape_string($summary)."',
 						biography = '".$conn->real_escape_string($biography)."',
+						image = '".$conn->real_escape_string($author_image)."',
 						contact_flag = ".(int)$contact_flag.",
 						sub_expiry = '".$conn->real_escape_string($expiry_date)."',
 						guest_flag = ".(int)$guest_flag.",
@@ -1703,7 +1767,7 @@
 			// send an email to the user
 			$mail = new PHPMailerLite();
 			$mail->SetFrom($config['admin']['email'], $config['site']['title']);
-			$mail->AddAddress($author['email'], $author['name']);
+			$mail->AddAddress($email, $name);
 			$mail->AddAddress($config['admin']['email'], $config['site']['title'].' admin');
 			$mail->Subject = "Your author details for ".$config['site']['title']." have been changed";
 			$mail->Body = "Dear ".$name.","."\n\n";
@@ -1713,9 +1777,9 @@
 			$mail->Body .= (!empty($summary)) ? "\t"."Summary: "."\n\t\t".$summary."\n\n" : '' ;
 			$mail->Body .= (!empty($biography)) ? "\t"."Biography: "."\n\t\t".$biography."\n\n" : '' ;
 			$mail->Body .= "\t"."Access level: "."\n\t\t".$_POST['author_level']."\n\n";
-			$block_status .= (!empty($_POST['block_author'])) ? " DO NOT" : '' ;
+			$block_status = (!empty($_POST['block_author'])) ? " DO NOT" : '' ;
 			$mail->Body .= "\t"."You currently".$block_status." have access to the site"."\n\n";
-			$contact_status .= (empty($contact_flag)) ? " NOT" : '' ;
+			$contact_status = (empty($contact_flag)) ? " NOT" : '' ;
 			$mail->Body .= "\t"."You are currently".$contact_status." contactable by readers of the site"."\n";
 			$mail->Send();
 			return true;
@@ -1910,7 +1974,7 @@
 					url = '".$conn->real_escape_string($url)."',
 					category_id = ".(int)$parent_id.",
 					summary = '".$conn->real_escape_string($summary)."',
-					description = '".$conn->real_escape_string($description)."'.
+					description = '".$conn->real_escape_string($description)."',
 					type = '".$conn->real_escape_string($type)."'
 					WHERE id = ".(int)$category_id;
 		$result = $conn->query($query);
@@ -3140,6 +3204,7 @@
 		$result = $conn->query($query);
 		$data = array();
 		while($row = $result->fetch_assoc()) { 
+			$row = stripslashes_deep($row);
 			$data[$row['category']][] = $row;
 		}
 		$result->close();
@@ -3189,7 +3254,7 @@
 		$query = "SELECT * FROM links WHERE id = ".(int)$link_id;
 		$result = $conn->query($query);
 		$row = $result->fetch_assoc();
-		return $row;
+		return stripslashes_deep($row);
 	}
 
 /**

@@ -1,4 +1,21 @@
 <?php
+// get config from database
+
+	if(empty($config)) {
+		$config = get_settings();
+	}
+		
+// initialise arrays
+
+	$aside_snippet = array();
+	$aside_content = array();
+
+	$new_asides = import_asides($config['site']['theme']);
+	if(!empty($new_asides)) {
+		foreach($new_asides as $aside_title => $aside_data) {
+			$aside_snippet[$aside_title] = $aside_data;
+		}
+	}
 
 // define snippets content
 
@@ -51,7 +68,13 @@
 				<a title="RSS feeds for '.$config['site']['title'].'" href="'.WW_WEB_ROOT.'/feeds/">Click here to view all available feeds</a>
 			</li>
 		</ul>';
-
+		
+	// get content for menu aside
+	
+	$aside_snippet['main_menu'] = '';
+	if($config['layout']['main_menu'] == 'aside') {
+		$aside_snippet['main_menu'] = insert_nav();
+	}
 
 // now we start formatting the above data into snippet-style html using the build_snippet function
 
@@ -61,7 +84,7 @@
 	
 		// first we define each snippet and store in a variable
 	
-		$aside_snippets = array();
+
 		
 		// here we build the actual html for each snippet
 		
@@ -89,8 +112,6 @@
 
 		// we can show a more comprehensive range of snippets if the user is not on a phone
 	
-		$aside_snippets = array();
-	
 		$aside_snippet['authors_list'] 		= build_snippet('Authors',$authors_list);
 		$aside_snippet['authors_select'] 	= build_snippet('Authors',$authors_select_form);
 		$aside_snippet['categories_list'] 	= build_snippet('Categories',$categories_list);
@@ -104,11 +125,12 @@
 		$aside_snippet['popular_articles'] 	= build_snippet('Most Popular',$popular_articles);
 		$aside_snippet['feeds'] 			= build_snippet('Feeds',$feeds_list);
 		$aside_snippet['twitter'] 			= '';
-		
+	
 		// default layout here
 	
 		$aside_content['upper'] = array($aside_snippet['search']);
 		$aside_content['inner']	= array(
+										$aside_snippet['main_menu'],
 										$aside_snippet['authors_select'],
 										$aside_snippet['categories_select'],
 										$aside_snippet['tags_select'],
@@ -128,24 +150,7 @@
 	
 // any aside files to import?
 
-	// look in the theme content folder
-	$content_files = get_files($theme_content_folder.'/');
-	foreach($content_files as $content_check) {
-		// if filename starts with 'aside' then it's a match - this method will skip the actual '_aside.php' file
-		if(strpos($content_check['filename'],'aside') === 0) {
-			// now to find the position
-			$pos_array = array('upper','inner','outer','lower');
-			foreach($pos_array as $pos) {
-				if(strpos($content_check['filename'],$pos) !== false) {
-					ob_start();
-					include($content_check['path'].$content_check['filename']);
-					${$content_check['filename']} = ob_get_contents();
-					ob_end_clean();
-					$aside_content[$pos][] = ${$content_check['filename']};
-				}
-			}
-		}
-	}
+
 
 /*
 	what happens next?

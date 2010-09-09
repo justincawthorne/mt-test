@@ -1,7 +1,7 @@
 <?php
 include_once('ww_config/model_functions.php');
 
-	exit();
+	// exit();
 
 // functions to split tags and attachments into separate tables
 
@@ -11,23 +11,22 @@ include_once('ww_config/model_functions.php');
 					FROM ww_articles
 					WHERE map_tags > 0";
 		$result = $conn->query($query);
-		$data = array();
+		$tag_data = array();
 		while($row = $result->fetch_assoc()) { 
 			$tags = explode(',', $row['map_tags']);
-			$article = $row['articleID'];
 			foreach($tags as $tag) {
-				$rowtag['article_id'] = $article;
-				$rowtag['tag_id'] = $tag;
-				$datatags[] = $rowtag;
+				$newtag['article_id'] = $row['articleID'];
+				$newtag['tag_id'] = $tag;
+				$tag_data[] = $newtag;
 			}
 		}
 		// insert data
-		foreach($datatags as $tag) {
+		foreach($tag_data as $insert_tag) {
 			$insert = "INSERT INTO tags_map (tag_id, article_id) 
-						VALUES (".(int)$tag['tag_id'].", ".(int)$tag['article_id'].")";
+						VALUES (".(int)$insert_tag['tag_id'].", ".(int)$insert_tag['article_id'].")";
 			$result = $conn->query($insert);
 		}
-		return $datatags;
+		return;
 	}
 
 /* attachments */
@@ -38,35 +37,25 @@ include_once('ww_config/model_functions.php');
 					FROM ww_articles
 					WHERE map_attachments > 0";
 		$result = $conn->query($query);
-		$data = array();
+		$attach_data = array();
 		while($row = $result->fetch_assoc()) { 
-			$tags = explode(',', $row['map_attachments']);
+			$attachments = explode(',', $row['map_attachments']);
 			$article = $row['articleID'];
-			foreach($tags as $tag) {
-				$rowtag['article_id'] = $article;
-				$rowtag['attachment_id'] = $tag;
-				$datatags[] = $rowtag;
+			foreach($attachments as $attach) {
+				$newattach['article_id'] = $article;
+				$newattach['attachment_id'] = $attach;
+				$attach_data[] = $newattach;
 			}
 		}
 		// insert data
-		foreach($datatags as $attach) {
+		foreach($attach_data as $attachment) {
 			$insert = "INSERT INTO attachments_map (attachment_id, article_id) 
-						VALUES (".(int)$attach['attachment_id'].", ".(int)$attach['article_id'].")";
+						VALUES (".(int)$attachment['attachment_id'].", ".(int)$attachment['article_id'].")";
 			$result = $conn->query($insert);
 		}
-		return $datatags;
+		return;
 	}
-
-/*
-	$tags_check = split_tags();
-	debug_array($tags_check);
-*/
-
-/*
-	$attach_check = split_attachments();
-	debug_array($attach_check);
-*/
-
+	
 // articles
 
 	$sql['articles'] = "
@@ -135,7 +124,7 @@ include_once('ww_config/model_functions.php');
 			parent_catID,
 			cat_name,
 			cat_url,
-			cat_summary,
+			cat_desc,
 			'',
 			''
 	FROM ww_categories;";
@@ -205,6 +194,49 @@ include_once('ww_config/model_functions.php');
 // run sql
 	
 	$conn = author_connect();
+
+// check attachments_map
+	
+	$a_check = "SELECT * FROM attachments_map";
+	$a_total = $conn->query($a_check);
+	$a_rows = $a_total->num_rows;
+	echo 'attachments_map has '.$a_rows.' rows<br/>';
+	if(empty($a_rows)) {
+		$attach_check = split_attachments();
+		echo '-- attachments_map updated<br/>';
+	} else {
+		echo '-- attachments_map NOT updated<br/>';
+	}
+				
+// check tags_map
+		
+	$t_check = "SELECT * FROM tags_map";
+	$t_total = $conn->query($t_check);
+	$t_rows = $t_total->num_rows;
+	echo 'tags_map has '.$t_rows.' rows<br/>';
+	if(empty($t_rows)) {
+		$tags_check = split_tags();
+		echo '-- tags_map updated<br/>';
+	} else {
+		echo '-- tags_map NOT updated<br/>';
+	}		
+	
+// update settings
+
+	$s_check = "SELECT * FROM settings";
+	$s_total = $conn->query($s_check);
+	$s_rows = $s_total->num_rows;
+	echo 'settings has '.$s_rows.' rows<br/>';
+	$update_result = $conn->query($update);
+	if(!$update_result) {
+		echo '-- settings not copied over<br />';
+	} else {
+		echo '-- copying settings over -> success<br/>';
+		$rename = 'RENAME TABLE ww_config TO ww_migrated_config';
+		$conn->query($rename);
+	}
+
+// all other tables
 	
 	foreach($sql as $table => $insert) {
 		$check = "SELECT * FROM ".$table;
@@ -217,15 +249,23 @@ include_once('ww_config/model_functions.php');
 				echo $conn->error.'<br />';
 			} else {
 				echo '-> success<br/>';
+				$rename = 'RENAME TABLE ww_'.$table.' TO ww_migrated_'.$table;
+				$conn->query($rename);
 			}			
+		} else {
+			echo '-- '.$table.' NOT updated<br/>';
 		}
 	}
 	
-	// update settings
-	$update_result = $conn->query($update);
-	if(!$result) {
-		echo 'settings not copied over '.$conn->error.'<br />';
-	} else {
-		echo 'copying settings over -> success<br/>';
-	}	
+
+
+// advisory
+
+	echo '
+	<h4>although the migration process can only be run once you should do the following:</h4>
+		<ul>
+			<li>log into your site via ftp and delete this file (migrate.php)</li>
+			<li>log into your mysql database and delete the old tables</li>
+		<ul>
+	';
 ?>

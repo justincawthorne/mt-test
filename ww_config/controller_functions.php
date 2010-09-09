@@ -844,7 +844,7 @@
  * 
  */	
  	
-	function get_feeds() {
+	function get_feeds($show_all_feeds = 1) {
 		$feed_list = array();
 		/* 	section
 			description
@@ -861,43 +861,89 @@
 				'title' => 'Main Feed',
 				'url' => WW_WEB_ROOT.'/rss/'
 		);
-		// category feeds
-		$categories = get_categories();
-		$feed_list['categories'] = array(
-			'section' => 'Categories',
-			'description' => 'Feeds for individual categories'
-		);
-		foreach($categories as $cat) {
-			$feed_list['categories']['feeds'][] = array (
-					'title' => $cat['title'],
-					'url' => WW_WEB_ROOT.'/rss/'.$cat['url']
+		// get additional rss feeds via links table
+		$rss_links = get_links('site_rss');
+		if(!empty($rss_links)) {
+			$feed_list['additional'] = array(
+				'section' => 'Additional Feeds',
+				'description' => 'Other feeds for this site'
 			);
+			foreach($rss_links['site_rss'] as $cat => $link) {
+				$feed_list['additional']['feeds'][] = array (
+						'title' => $link['title'],
+						'url' => $link['url']
+				);
+			}		
 		}
-		// author feeds
-		$authors = get_authors();
-		$feed_list['authors'] = array(
-			'section' => 'Authors',
-			'description' => 'Feeds for individual authors'
-		);
-		foreach($authors as $author) {
-			$feed_list['authors']['feeds'][] = array (
-					'title' => $author['title'],
-					'url' => WW_WEB_ROOT.'/rss/'.$author['url']
+		// show other links
+		if(!empty($show_all_feeds)) {
+			// category feeds
+			$categories = get_categories();
+			$feed_list['categories'] = array(
+				'section' => 'Categories',
+				'description' => 'Feeds for individual categories'
 			);
-		}
-		// tag feeds
-		$tags = get_tags();
-		$feed_list['tags'] = array(
-			'section' => 'Tags',
-			'description' => 'Feeds for individual tags'
-		);
-		foreach($tags as $tag) {
-			$feed_list['tags']['feeds'][] = array (
-					'title' => $tag['title'],
-					'url' => WW_WEB_ROOT.'/rss/'.$tag['url']
+			foreach($categories as $cat) {
+				$feed_list['categories']['feeds'][] = array (
+						'title' => $cat['title'],
+						'url' => WW_WEB_ROOT.'/rss/'.$cat['url']
+				);
+			}
+			// author feeds
+			$authors = get_authors();
+			$feed_list['authors'] = array(
+				'section' => 'Authors',
+				'description' => 'Feeds for individual authors'
 			);
+			foreach($authors as $author) {
+				$feed_list['authors']['feeds'][] = array (
+						'title' => $author['title'],
+						'url' => WW_WEB_ROOT.'/rss/author/'.$author['url']
+				);
+			}
+			// tag feeds
+			$tags = get_tags();
+			$feed_list['tags'] = array(
+				'section' => 'Tags',
+				'description' => 'Feeds for individual tags'
+			);
+			foreach($tags as $tag) {
+				$feed_list['tags']['feeds'][] = array (
+						'title' => $tag['title'],
+						'url' => WW_WEB_ROOT.'/rss/tag/'.$tag['url']
+				);
+			}
 		}
 		return $feed_list;
+	}
+
+/**
+ * get_links
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function get_links($type = '') {
+		$conn = reader_connect();
+		$query = "SELECT * FROM links";
+		if(!empty($type)) {
+			$query .= " WHERE category LIKE '".$conn->real_escape_string($type)."'";	
+		} else {
+			$query .= " WHERE category NOT IN('site_rss','site_menu','site_head')";
+		}
+		$query .= " ORDER BY category, id DESC";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) { 
+			$row = stripslashes_deep($row);
+			$data[$row['category']][] = $row;
+		}
+		$result->close();
+		return $data;		
 	}
 
 /**
@@ -1090,6 +1136,11 @@
 		$data = array();
 		while($row = $result->fetch_assoc()) {
 			$row = stripslashes_deep($row);
+			// create links
+			$link = ($config_layout['url_style'] == 'blog') 
+				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($row['date_uploaded'])).'/'.$row['url'].'/'
+				: WW_REAL_WEB_ROOT.'/'.$row['category_url'].'/'.$row['url'].'/';
+			$row['link'] = $link;			
 			// do we need a summary?
 			if( (empty($row['summary'])) && ($config_layout['list_style'] == 'summary') ) {
 				$row['summary'] = create_summary($row['body']);
@@ -1098,7 +1149,8 @@
 			if($config_layout['list_style'] == 'intro') {
 				$row['intro'] = get_intro($row['body']);
 				if(empty($row['intro'])) {
-					$row['intro'] = '<p>'.create_summary($row['body']).'</p>';
+					$row['intro'] = 
+					'<p>'.extract_sentences($row['body'],50).' <a href="'.$link.'">(continues...)</a></p>';
 				}
 			}
 			// do we need the full body?
@@ -1107,11 +1159,7 @@
 			} else {
 				$row['body'] = convert_relative_urls($row['body']);
 			}
-			// create links
-			$link = ($config_layout['url_style'] == 'blog') 
-				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($row['date_uploaded'])).'/'.$row['url'].'/'
-				: WW_REAL_WEB_ROOT.'/'.$row['category_url'].'/'.$row['url'].'/';
-			$row['link'] = $link;
+
 			// get tags
 			$tags = get_article_tags($row['id']);
 			$row['tags'] = (!empty($tags)) ? $tags : '' ;
@@ -1355,25 +1403,27 @@
 	function get_feed_comments($id = 0, $limit = 20) {
 		$conn = reader_connect();
 		$query = 'SELECT 
-					article_id, comments.id, reply_id, comments.author_id, 
+					article_id, comments.id, comments.title, reply_id, comments.author_id, 
 					comments.body, comments.date_uploaded,
 					poster_name, poster_link, poster_email,
-					articles.title
+					articles.title as article_title
 				FROM comments
 				LEFT JOIN articles on articles.id = comments.article_id
 				WHERE approved = 1';
 		if(!empty($id)) {
-			$query .= ' AND article_id = '.(int)$id.' LIMIT 0,'.$limit;
+			$query .= ' AND article_id = '.(int)$id;
 		}
-		$query .= ' ORDER BY date_uploaded DESC';
+		$query .= ' ORDER BY date_uploaded DESC LIMIT 0,'.$limit;
 		$result = $conn->query($query);
 		$data = array();
 		while($row = $result->fetch_assoc()) { 
 			$row = stripslashes_deep($row);
 			$type = (!empty($row['author_id'])) ? '[AUTHOR] ' : '';
 			$type = (!empty($row['reply_id'])) ? $type.'[REPLY] ' : $type ;
-			$row['summary'] = $type.$row['body'];
+			$row['title'] = (!empty($row['title'])) ? $row['title'] : 're: '.$row['article_title'] ;
+			$row['summary'] = $type.$row['body'].' (... posted to article: <strong>'.$row['article_title'].'</strong>)';
 			$row['link'] = WW_WEB_ROOT.'/id/'.$row['article_id'].'#comment_'.$row['id'];
+			$row['body'] = '';
 			$data[] = $row;
 		}
 		return $data;		
@@ -1442,7 +1492,7 @@
  * 
  */	
  
-	function validate_comment($config_comments, $article_id) {
+	function validate_comment($config_comments, $article) {
 		if (!session_id()) session_start();
 		if(!isset($_POST)) {
 			return false;
@@ -1454,21 +1504,27 @@
 		// recreate token values
 		$salt = $_SESSION['comment_data']['salt'];
 		$now = date('Ymdh');
-		$token_name = md5($article_id.$now.$salt);
-		$token_value = md5($salt.$now.$article_id);
-		
+		$token_name = md5($article['id'].$now.$salt);
+		$token_value = md5($salt.$now.$article['id']);
+	
+	// check comment posted
+		if( (isset($_SESSION['comment_posted'])) && ($_SESSION['comment_posted'] > time()) ) {
+			$delay = $_SESSION['comment_posted'] - time();
+			$form_data['error'][] = "You need to wait ".$delay." seconds before posting another comment";
+		}
+				
 	// check session/POST token
 	
 		if(isset($_SESSION['comment_data'][$token_name])) {
 			if($_SESSION['comment_data'][$token_name] != $token_value) {
-				$form_data['error'][] = "session value not set correctly";
+				$form_data['error'][] = "<!--session value not set correctly-->";
 			}
 			if(isset($_POST[$token_name])) {
 				if($_POST[$token_name] != $_SESSION['comment_data'][$token_name]) {
-					$form_data['error'][] = "post token does not match session";
+					$form_data['error'][] = "<!--post token does not match session-->";
 				}
 			} else {
-				$form_data['error'][] = "post token not set";
+				$form_data['error'][] = "<!--post token not set-->";
 			}
 			unset($_SESSION['comment_data'][$token_name]);
 		// one hour's grace
@@ -1478,17 +1534,17 @@
 			$prev_value = md5($salt.$prev_now.$article_id);
 			if(isset($_SESSION['comment_data'][$prev_name]))  {
 				if($_SESSION['comment_data'][$prev_name] != $prev_value)  {
-					$form_data['error'][] = "prev session value not set correctly";	
+					$form_data['error'][] = "<!--prev session value not set correctly-->";	
 				}
 				if(isset($_POST[$token_name])) {
 					if($_POST[$token_name] != $_SESSION['comment_data'][$token_name]) {
-						$form_data['error'][] = "post token does not match prev session";
+						$form_data['error'][] = "<!--post token does not match prev session-->";
 					}
 				} else {
-					$form_data['error'][] = "prev post token not set";
+					$form_data['error'][] = "<!--prev post token not set-->";
 				}			
 			} else {
-				$form_data['error'][] = "session not correctly set";
+				$form_data['error'][] = "<!--session not correctly set-->";
 			}
 			unset($_SESSION['comment_data'][$prev_name]);
 		}
@@ -1498,10 +1554,10 @@
 		if(isset($_SESSION['comment_data']['comment_answer'])) {
 			if(!empty($_POST['comment_answer'])) {
 				if($_POST['comment_answer'] != $_SESSION['comment_data']['comment_answer']) {
-					$form_data['error'][] = "answer incorrect";
+					$form_data['error'][] = "Security answer was incorrect";
 				}
 			} else {
-				$form_data['error'][] = "Answer not given";
+				$form_data['error'][] = "Security answer not given";
 			}
 		}
 		
@@ -1567,17 +1623,10 @@
 		
 		// article_id - required
 		
-		if (!empty($_POST['article_id'])) {
-			$form_data['article_id'] = (int)$_POST['article_id'];
-			if(empty($form_data['article_id'])) {
-				$form_data['error'][] = "Incorrectly linked to an article";
-			}
-		} else {
-			$form_data['error'][] = "Not linked to an article";
-		}
+		$form_data['article_id'] = $article['id'];
 		
 		// reply id - optional / integer
-		
+
 		$form_data['reply_id'] = (!empty($_POST['reply_id'])) ? (int)$_POST['reply_id'] : 0 ;
 		
 		// others
@@ -1585,6 +1634,13 @@
 		$form_data['poster_IP'] = $_SERVER['REMOTE_ADDR'];
 		$form_data['date_uploaded'] = date('Y-m-d H:i:s');
 		$form_data['author_id'] = (isset($_SESSION['ad_user_id'])) ? (int)$_SESSION['ad_user_id'] : 0 ;
+		
+		// data for comment approval email
+		if(empty($form_data['approved'])) {
+			$form_data['article_title'] = $article['title'];
+			$form_data['author_email'] 	= $article['author_email'];
+			$form_data['author_name'] 	= $article['author_name'];			
+		}
 		
 		// clear comment session
 		
@@ -1644,13 +1700,41 @@
 			return false;
 		} else {
 			unset($_POST);
-			/*
-			$author_conn = author_connect();
-			$update = "UPDATE articles 
-						SET comment_count = comment_count+1
-						WHERE id = ".(int)$form_data['article_id'];
-			$author_conn->query($update);
-			*/
+			// set a session to deter bulk posting
+			$_SESSION['comment_posted'] = time()+30;
+			// email author
+			if(empty($form_data['approved'])) {
+				$config = get_settings();
+				// get details
+				$edit_link = WW_WEB_ROOT.'/ww_edit/index.php?page_name=comments&comment_id='.$new_id;
+				// compose mail
+				require(WW_ROOT.'/ww_edit/_snippets/class.phpmailer-lite.php');
+				$mail = new PHPMailerLite();
+				$mail->AddAddress($form_data['author_email'], $form_data['author_name']);
+				$mail->SetFrom($config['admin']['email'], $config['site']['title']);
+				$mail->Subject = 'A new comment needs approval';
+				// html body
+				$html_body = '<p>The following comment has been posted to your article: <strong>'.$form_data['article_title'].'</strong></p>';
+				if(!empty($form_data['title'])) {
+					$html_body .= '<blockquote><em>'.$form_data['title'].'</em><blockquote>';	
+				}
+				$html_body .= '
+				<blockquote>'.$form_data['body'].'</blockquote>
+				<p>Submitted by: <em>'.$form_data['poster_name'].'</em> on  <em>'.from_mysql_date($form_data['date_uploaded']).'</em></p>
+				<p><strong><a href="'.$edit_link.'">click here to approve or delete this comment</a></strong></p>';
+				// text body
+				$mail->AltBody = 'The following comment has been posted to your article: '.$form_data['article_title']."\n\n";
+				if(!empty($form_data['title'])) {
+					$mail->AltBody .= $form_data['title']."\n\n";	
+				}
+				$mail->AltBody .= $form_data['body']."\n\n";
+				$mail->AltBody .= 'Submitted by: '.$form_data['poster_name'].' on  '.from_mysql_date($form_data['date_uploaded'])."\n\n";
+				$mail->AltBody .= 'To approve or delete this comment visit this link: '.$edit_link;
+				$mail->MsgHTML($html_body);
+				$mail->Send();
+			}
+			$reload = current_url();
+			header('Location: '.$reload);
 			return true;
 		}
 		

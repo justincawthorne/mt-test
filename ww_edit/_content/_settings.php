@@ -13,7 +13,7 @@
 	
 	$messages = '';
 	if(isset($_POST['update'])) {
-		
+
 		foreach($_POST as $element => $value) {
 			
 			if($element == 'update') {
@@ -24,9 +24,12 @@
 					UPDATE settings 
 					SET property_value='".$conn->real_escape_string($value)."' 
 					WHERE property_name LIKE '".$conn->real_escape_string($element)."'";
+
 				$result = $conn->query($update);
 				if(!$result) {
 					$messages = $conn->error;
+				} else {
+					header('Location: '.$url.$_POST['tab']);
 				}
 			}
 			
@@ -201,7 +204,7 @@
 						'.str_replace('_',' ',$setting_data['property_name']).'
 					</label>
 					<select name="'.$setting_data['property_name'].'"
-						id="'.$setting_data['property_name'].'">
+						id="'.$setting_data['property_name'].'" >
 							<option value="">select...</option>';
 				//options for front article dropdown
 				if($setting_data['property_name'] == 'article_id') {
@@ -232,7 +235,7 @@
 				break;
 				
 		// checkbox
-			
+		/*	
 			case 'checkbox':
 				$checked = (!empty($setting_data['property_value'])) ? ' checked="checked"' : '' ;
 				$default = (!empty($setting_data['default_value'])) ? 'yes' : 'no' ;
@@ -247,6 +250,26 @@
 						id="'.$setting_data['property_name'].'" 
 						value="1"'.$checked.'/>
 					</span>
+					<span class="default">'.$default.'</span>
+					<span class="note">'.$setting_data['summary'].'</span>
+				</p>';
+				break;
+		*/		
+			case 'checkbox':
+				$yes_selected = (!empty($setting_data['property_value'])) ? ' selected="selected"' : '' ;
+				$no_selected = (empty($setting_data['property_value'])) ? ' selected="selected"' : '' ;
+				$default = (!empty($setting_data['default_value'])) ? 'yes' : 'no' ;
+				$opt_class = (!empty($setting_data['property_value'])) ? ' opt_yes' : '' ;
+				$form_field = '
+				<p>
+					<label for="'.$setting_data['property_name'].'">
+						'.str_replace('_',' ',$setting_data['property_name']).'
+					</label>
+					<select name="'.$setting_data['property_name'].'"
+						id="'.$setting_data['property_name'].'" class="select_checkbox'.$opt_class.'">
+						<option value="0"'.$no_selected.'>No</option>
+						<option value="1"'.$yes_selected.'>Yes</option>
+					</select>
 					<span class="default">'.$default.'</span>
 					<span class="note">'.$setting_data['summary'].'</span>
 				</p>';
@@ -353,6 +376,7 @@
 		$main_content .= '	
 			<p>
 				<span class="note">
+				<input name="tab" value="#tab_'.$header.'" type="hidden"/>
 				<input type="submit" name="update" value="update '.$header.' settings" />
 				</span>
 			</p>
