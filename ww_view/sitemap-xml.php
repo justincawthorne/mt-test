@@ -47,7 +47,7 @@ foreach($articles_xml_list as $article) {
 
 // add category index
 
-	$cats_xml_list = get_categories();
+	$cats_xml_list = get_categories_basic();
 	foreach($cats_xml_list as $cat_xml) { 
 	echo "
 		<url>

@@ -415,7 +415,7 @@ function insert_favicon($theme = 'default') {
 		<div id="inner_wrapper">';
 		
 		// header
-		$panel 	= (!empty($config['site']['header_panel'])) ? $config['site']['header_panel'] : '' ;
+		$panel 	= (!empty($config['site']['header_panel_html'])) ? $config['site']['header_panel_html'] : '' ;
 		$nav	= ($config['layout']['main_menu'] == 'header') ? insert_nav() : '' ;
 		echo (!empty($body_content['header'])) 
 			? $body_content['header'] 
@@ -1473,6 +1473,7 @@ function insert_favicon($theme = 'default') {
 			$html .= '
 				</span>
 				<span class="listing_category">';
+					$html .= (!empty($item['parent_category_url'])) ? '<a href="'.WW_WEB_ROOT.'/'.$item['parent_category_url'].'/" title="see all articles in this category">'.$item['parent_category_title'].'</a> &gt; ' : '' ;
 					$html .= (isset($item['category_url'])) ? '<a href="'.WW_WEB_ROOT.'/'.$item['category_url'].'/" title="see all articles in this category">'.$item['category_title'].'</a>' : '' ;
 			$html .= '
 				</span>

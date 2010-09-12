@@ -119,6 +119,7 @@
 		$allowed_pages[] = 'settings';
 		$allowed_pages[] = 'links';
 		$allowed_pages[] = 'files';
+		$allowed_pages[] = 'editor';
 		
 	}
 	

@@ -151,15 +151,47 @@
 			return false;
 		}
 		$conn = reader_connect();
-		$query = "SELECT title 
+		$query = "SELECT categories.title, parent.title AS parent_title
 					FROM categories
-					WHERE id = ".(int)$id;
+					LEFT JOIN categories AS parent ON categories.category_id = parent.id
+					WHERE categories.id = ".(int)$id;
 		$result = $conn->query($query);
 		$row = $result->fetch_assoc();
+		$title = (!empty($row['parent_title'])) ? $row['parent_title'].': '.$row['title'] : $row['title'] ;
 		$result->close();
-		return $row['title'];
+		return $title;
 	}
 
+/**
+ * get_categories_basic
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+ 	
+	function get_categories_basic() {
+		$conn = reader_connect();
+		$query = "SELECT COUNT(categories.id) as total,
+						categories.id, 
+						categories.url, 
+						categories.title 
+					FROM categories
+					LEFT JOIN articles ON articles.category_id = categories.id
+					WHERE articles.status = 'P'
+					AND articles.date_uploaded <= NOW()
+					GROUP BY categories.id
+					ORDER BY title";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) { 
+			$row['link'] = WW_WEB_ROOT.'/'.$row['url'].'/';
+			$data[$row['id']] = $row;	
+		}
+		return $data;
+	}
 
 /**
  * get_tag_title
@@ -202,11 +234,28 @@
 			return false;
 		}
 		$conn = reader_connect();
-		$query = "SELECT category_id, title, url, summary, description, type 
+		$query = "SELECT categories.id, categories.category_id, 
+					categories.title, categories.url, 
+					categories.summary, categories.description, categories.type, 
+					parent.title AS parent_title, parent.url AS parent_url
 					FROM categories
-					WHERE id = ".(int)$id;
+					LEFT JOIN categories AS parent ON categories.category_id = parent.id
+					WHERE categories.id = ".(int)$id;
 		$result = $conn->query($query);
 		$row = $result->fetch_assoc();
+		// check for child categories
+		if(empty($row['category_id'])) {
+			$children = array();
+			$c_query = "SELECT title, url
+						FROM categories
+						WHERE category_id = ".(int)$row['id']."
+						ORDER BY title";
+			$c_result = $conn->query($c_query);
+			while($c_row = $c_result->fetch_assoc()) { 
+				$children[] = $c_row;
+			}
+			$row['child'] = $children;
+		}
 		$result->close();
 		return $row;
 	}

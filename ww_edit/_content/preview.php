@@ -44,6 +44,7 @@
 // now bring in our functions	
 	
 	include_once(WW_ROOT.'/ww_config/model_functions.php');
+	include_once(WW_ROOT.'/ww_config/combined_functions.php');
 	include_once(WW_ROOT.'/ww_config/controller_functions.php');
 	include_once(WW_ROOT.'/ww_config/view_functions.php');	
 
@@ -85,31 +86,72 @@
 			? $theme_content_folder.'/_article.php'
 			: WW_ROOT.'/ww_view/_content/_article.php';
 			
-	// now buffer main content into a variable
+		if(file_exists($theme_content_folder.'/_header.php')) {
+		    ob_start();
+			include($theme_content_folder.'/_header.php');
+		    $body_content['header'] = ob_get_contents();
+		    ob_end_clean();	
+		}
+		
+	// nav content - below is just for example
+	
+		/* $body_content['nav'] = '<div id="nav">yeah, nav content</div>'; */
+
+		if(file_exists($theme_content_folder.'/_nav.php')) {
+		    ob_start();
+			include($theme_content_folder.'/_nav.php');
+		    $body_content['nav'] = ob_get_contents();
+		    ob_end_clean();	
+		}
+		
+	// footer content - below is just for example
+		
+		/* $body_content['footer'] = '<div id="footer">test footer</div>'; */
+		
+		if(file_exists($theme_content_folder.'/_footer.php')) {
+			ob_start();
+			include($theme_content_folder.'/_footer.php');
+		    $body_content['footer'] = ob_get_contents();
+		    ob_end_clean();	
+		}
+			
+	// get aside content
+
+		if(file_exists($theme_content_folder.'/_aside.php')) {
+			ob_start();
+			include($theme_content_folder.'/_aside.php');
+		    $body_content['aside'] = ob_get_contents();
+		    ob_end_clean();	
+		}
+	
+		//$body_content['aside'] = insert_aside($aside_content);
+		
+	// buffer main content and insert into a variable
 
 	    ob_start();
 		include $content_partial;
 	    $body_content['main'] = ob_get_contents();
 	    ob_end_clean();	
-	    
-	// get aside content
 
-		include_once(WW_ROOT.'/ww_view/_content/_aside.php');
+
+	/*
+		with a builder file we can use a different html structure
+	*/
+	
+		if(file_exists($theme_content_folder.'/builder.php')) {
+			
+			include($theme_content_folder.'/builder.php');
+			
+		} else {
+
+		// output default head section
 		
-		// additional theme specific asides?
+			$head_content = '';
+			show_head($head_content, $config);
 		
-		if(file_exists($theme_content_folder.'/_aside.php')) {
-			include_once($theme_content_folder.'/_aside.php');
+		// output default body section
+		
+			show_body($body_content, $config);
+			
 		}
-	
-		$body_content['aside'] = insert_aside($aside_content);
-
-	// output head section
-	
-		$head_content = '';
-		show_head($head_content, $config['site']);
-	
-	// output body section
-	
-		show_body($body_content, $config);
 ?>

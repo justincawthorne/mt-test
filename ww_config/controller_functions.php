@@ -696,38 +696,6 @@
 		return $row;
 	}
 
-
-/**
- * get_categories_basic
- * 
- * 
- * 
- * 
- * 
- * 
- */	
- 	
-	function get_categories_basic() {
-		$conn = reader_connect();
-		$query = "SELECT COUNT(categories.id) as total,
-						categories.id, 
-						categories.url, 
-						categories.title 
-					FROM categories
-					LEFT JOIN articles ON articles.category_id = categories.id
-					WHERE articles.status = 'P'
-					AND articles.date_uploaded <= NOW()
-					GROUP BY categories.id
-					ORDER BY title";
-		$result = $conn->query($query);
-		$data = array();
-		while($row = $result->fetch_assoc()) { 
-			$row['link'] = WW_WEB_ROOT.'/'.$row['url'].'/';
-			$data[$row['id']] = $row;	
-		}
-		return $data;
-	}
-
 /**
  * list_categories
  * 
@@ -1086,6 +1054,8 @@
 					articles.date_uploaded, 
 					categories.title AS category_title, 
 					categories.url AS category_url,
+					parent.title AS parent_category_title,
+					parent.url AS parent_category_url,
 					authors.name AS author_name, 
 					authors.url AS author_url,
 					(SELECT COUNT(id) 
@@ -1094,7 +1064,8 @@
 					AND article_id = articles.id) AS comment_count
 				FROM articles 
 					LEFT JOIN authors ON articles.author_id = authors.id 
-					LEFT JOIN categories ON articles.category_id = categories.id ";
+					LEFT JOIN categories ON articles.category_id = categories.id
+					LEFT JOIN categories AS parent ON categories.category_id = parent.id  ";
 		if (isset($_GET['tag_id'])) {
 			$query .= " LEFT JOIN tags_map ON tags_map.article_id = articles.id";
 		}
@@ -1287,6 +1258,8 @@
 					articles.date_amended,
 					categories.title AS category_title, 
 					categories.url AS category_url,
+					parent.title AS parent_category_title,
+					parent.url AS parent_category_url,
 					authors.name AS author_name, 
 					authors.url AS author_url,
 					authors.email AS author_email,
@@ -1299,7 +1272,8 @@
 				FROM articles
 					LEFT JOIN authors ON articles.author_id = authors.id 
 					LEFT JOIN categories ON articles.category_id = categories.id
-				WHERE articles.status = 'P'
+					LEFT JOIN categories AS parent ON categories.category_id = parent.id
+				WHERE articles.status IN('P','A')
 					AND articles.date_uploaded <= NOW()";
 		$query .= (!empty($article_id)) 
 			?  " AND articles.id = ".$article_id 

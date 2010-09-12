@@ -295,8 +295,8 @@ include_once('ww_config/model_functions.php');
 	('site', 'subtitle', 'A new site powered by Wicked Words, an Evil Chicken production', 'A new site powered by Wicked Words, an Evil Chicken production', 'textarea', NULL, 'a tagline, or subtitle, for your site'),	
 	('site', 'theme', '/default', '/default', 'select', NULL, 'theme to use for site'),	
 	('site', 'doctype', 'xhtml11', 'xhtml11', 'select', 'xhtml10,xhtml11,html5', 'the doctype for your site'),
-	('site', 'html_lang', 'en', 'en', 'select', NULL, 'the default language for your site'),
-	('site', 'header_panel', '', '', 'textarea', NULL, 'enter any html you wish to place in the header_panel section'),	
+	('site', 'html_lang', 'en', 'en', 'select', 'en', 'the default language for your site'),
+	('site', 'header_panel_html', '', '', 'textarea', NULL, 'enter any html you wish to place in the header_panel section'),	
 	('site', 'xml_namespaces', '', '', 'textarea', NULL, 'enter any additional namespaces you require as a string'),
 	('meta', 'author', 'Wicked Words', 'Wicked Words', 'text', NULL, 'The author of the site. Overwritten on article pages by the article author.'),
 	('meta', 'Content-Type', 'text/html;charset=UTF-8', 'text/html;charset=UTF-8', 'text', NULL, NULL),
@@ -319,11 +319,6 @@ include_once('ww_config/model_functions.php');
 	('layout', 'main_menu', '0', '0', 'select', 'none,header,navbar,aside', 'Position of main menu: none, at top of page (header); below header (navbar); or in column (aside).'),
 	('layout', 'per_page', '20', '20', 'text', NULL, 'Number of posts to show per page.'),
 	('layout', 'url_style', 'cms', 'cms', 'select', 'cms,blog', NULL),	
-	('design', 'site_width', '960', '960', 'text', NULL, 'overall width of site'),
-	('design', 'margins', '10', '10', 'text', NULL, 'space between main content and outer elements (columns)'),	
-	('design', 'title_height', '200', '200', 'text', NULL, 'height of title bar'),
-	('design', 'aside_width', '220', '220', 'text', NULL, 'total width of sidebar'),
-	('design', 'footer_height', '80', '80', 'text', NULL, 'height of footer'),
 	('cache', 'cache_ext', 'cache', 'cache', 'text', NULL, 'file extension to give cached files'),
 	('cache', 'cache_time', '600', '600', 'text', NULL, 'Caching time in seconds'),
 	('cache', 'caching_on', '0', '0', 'checkbox', NULL, 'Select yes to turn caching on'),
@@ -339,6 +334,14 @@ include_once('ww_config/model_functions.php');
 	('connections', 'disqus_shortname', NULL, NULL, 'text', NULL, 'if you have a Disqus account enter the short name here to have disqus process all comments on the site')
 	;
 	";
+	
+/* design elements removed
+	('design', 'site_width', '960', '960', 'text', NULL, 'overall width of site'),
+	('design', 'margins', '10', '10', 'text', NULL, 'space between main content and outer elements (columns)'),	
+	('design', 'title_height', '200', '200', 'text', NULL, 'height of title bar'),
+	('design', 'aside_width', '220', '220', 'text', NULL, 'total width of sidebar'),
+	('design', 'footer_height', '80', '80', 'text', NULL, 'height of footer'),
+*/
 
 
 // get existing tables list
