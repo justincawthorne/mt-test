@@ -4,7 +4,7 @@
 
 	$page_title = 'links';
 
-	function build_links_listing($links) {
+	function build_links_listing($links, $tab) {
 		if(empty($links)) {
 			return;
 		}
@@ -24,16 +24,23 @@
 				}
 			}
 			foreach($links_array as $link) {
+				
+				$sort = (!empty($link['sort'])) ? $link['sort'] : '&nbsp;' ;
+				
 				$html .= '
 					<li>
 						<div class="link_title">
-							<a href="'.$_SERVER["PHP_SELF"].'?page_name=links&amp;link_id='.$link['id'].'&amp;action=edit">
+							<a href="'.$_SERVER["PHP_SELF"].'?page_name=links&amp;link_id='.$link['id'].'&amp;action=edit#'.$tab.'">
 							'.$link['title'].'</a>
 						</div>
 						
 						<div class="link_url">
 							<a href="'.$link['url'].'">
 							'.$link['url'].'</a>
+						</div>
+						
+						<div class="link_order">
+							'.$sort.'
 						</div>
 						
 						<div class="link_summary">
@@ -47,7 +54,7 @@
 				}
 					$html .= '	
 						<div class="link_delete">
-							<a href="'.$_SERVER["PHP_SELF"].'?page_name=files&amp;action=delete&amp;link_id='.$link['id'].'">
+							<a href="'.$_SERVER["PHP_SELF"].'?page_name=links&amp;action=delete&amp;link_id='.$link['id'].'">
 							delete</a>
 						</div>
 						
@@ -103,10 +110,14 @@
 				
 	}
 
-	if( (isset($_POST['delete_link'])) && ($_POST['delete_link'] == 'delete') ) {
+	// cancel delete link
 		
-	}
+	if( (isset($_POST['cancel_delete_link'])) && ($_POST['cancel_delete_link'] == 'No') ) {
+	
+		header('Location: '.$_SERVER["PHP_SELF"].'?page_name=links');
 
+	}
+	
 // get main content
 	
 	// get all links always
@@ -167,6 +178,21 @@
 			$main_content .= '
 			<p><strong>'.$error.'</strong></p>';
 		}
+		
+	// delete form
+	
+	if( (isset($_GET['action'])) && ($_GET['action'] == 'delete') ) {
+		
+		$main_content .= '
+			<h2>Are you sure you want to delete this link?</h2>
+			<form action="'.$action_url.'" method="post" name="confirm_delete_link_form">
+				<input name="confirm_delete_link" type="submit" value="Yes"/>
+				<input name="cancel_delete_link" type="submit" value="No" />
+			</form>
+			<hr />
+			';	
+				
+	}
 	
 	// start tabs
 		
@@ -185,7 +211,7 @@
 		<div id="tab_menu">
 		<p>Any links entered in this section will automatically be used for your nav menu (should you choose to use one)</p>';
 	if(!empty($menu_links)) {
-		$main_content .= build_links_listing($menu_links);
+		$main_content .= build_links_listing($menu_links, 'tab_menu');
 	} else {
 		$main_content .= '
 		<p>No links set in this category</p>';
@@ -198,7 +224,7 @@
 	<div id="tab_rss">
 	<p>Any links entered in this section will appear in the list of rss feeds for your site (this is primarily designed for situations where you want to provide site feeds via a third-party such as Feedburner. Remember, you can set an alternate url for your main rss feed in the settings/admin section (feed url).</p>';
 	if(!empty($rss_links)) {
-		$main_content .= build_links_listing($rss_links);
+		$main_content .= build_links_listing($rss_links, 'tab_rss');
 	} else {
 		$main_content .= '
 		<p>No links set in this category</p>';
@@ -211,7 +237,7 @@
 	<div id="tab_head">
 	<p>This section enables you to set up additional &lt;link&gt; items for the head section of your site. This should not be used for stylesheets or favicons (unless they are located off-site) - however, links can be placed here for alternate rss feeds, for instance, since only the main rss feed is included in the head by default.</p>';
 	if(!empty($head_links)) {
-		$main_content .= build_links_listing($head_links);
+		$main_content .= build_links_listing($head_links, 'tab_head');
 	} else {
 		$main_content .= '
 		<p>No links set in this category</p>';
@@ -224,7 +250,7 @@
 	<div id="tab_other">
 	<p>This section is for any other links you wish to feature on your site - in a blogroll aside snippet, for instance.</p>';
 	if(!empty($other_links)) {
-		$main_content .= build_links_listing($other_links);
+		$main_content .= build_links_listing($other_links, 'tab_other');
 	} else {
 		$main_content .= '
 		<p>No links set in this category</p>';
@@ -241,6 +267,7 @@
 		$form_title = 'Edit this link';
 		$edit_link = $link;
 		$edit_link['link_id'] = $link_id;
+		$clear_link = '<p><a href="'.$_SERVER["PHP_SELF"].'?page_name=links">clear this form</a></p>';
 		
 	} else {
 		
@@ -251,13 +278,15 @@
 		$edit_link['summary'] = '';
 		$edit_link['attributes'] = '';
 		$edit_link['category'] = '';
+		$edit_link['sort'] = '';
+		$clear_link = '';
 		
 	}
 	
 	$aside_content = '
 	<div class="snippet">
 		<h6>'.$form_title.'</h6>
-		
+		'.$clear_link.'
 		<form action="'.$action_url.'" method="post" id="edit_link_form">
 	
 		<p><label for="title">Link title:</label> 
@@ -268,10 +297,10 @@
 			<textarea name="url" cols="16" rows="3">'.$edit_link['url'].'</textarea></p>
 		
 		<p><label for="summary">Description:</label> 
-			<textarea name="summary" cols="16" rows="3">'.$edit_link['summary'].'</textarea></p>
+			<textarea name="summary" cols="16" rows="3" class="optional">'.$edit_link['summary'].'</textarea></p>
 		
 		<p><label for="attributes">Attributes:</label> 
-			<textarea name="attributes" cols="16" rows="3">'.$edit_link['attributes'].'</textarea></p>
+			<textarea name="attributes" cols="16" rows="3" class="optional">'.$edit_link['attributes'].'</textarea></p>
 		
 		<p><label for="category">Select Category:</label> 
 			<select name="category">';
@@ -294,7 +323,11 @@
 		<p>OR</p>
 		
 		<p><label for="new_category">Type New Category:</label> 
-			<input name="new_category" type="text" size="20"/></p>';
+			<input name="new_category" type="text" size="20" class="optional"/></p>
+		
+		<p><label for="sort">Order:</label> 
+			<input name="sort" type="text" class="short_input optional" size="3" value="'.$edit_link['sort'].'"/></p>
+			';
 			
 		if (!empty($edit_link['link_id'])) {
 			$aside_content .= '

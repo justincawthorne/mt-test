@@ -60,7 +60,7 @@ function show_head($head_content = '', $config = '') {
 	// html lang
 	echo (!empty($head_content['html_lang'])) 
 	? $head_content['html_lang'] 
-	: declare_html_lang($config['site']['html_lang']) ;
+	: declare_html_lang($config['site']['html_lang'], $config['site']['xml_namespaces']) ;
 	
 	// start head section
 	
@@ -78,7 +78,7 @@ function show_head($head_content = '', $config = '') {
 	: declare_meta($config['meta']) ;
 	
 	// head links
-	$links_array = (isset($config_site['link'])) ? $config_site['link'] : array() ;
+	$links_array = (isset($config['site']['link'])) ? $config['site']['link'] : array() ;
 	echo (!empty($head_content['links'])) 
 	? $head_content['links'] 
 	: insert_links($links_array);
@@ -158,15 +158,10 @@ function declare_doctype($type = 'xhtml11') {
  * 
  */	
 
-function declare_html_lang($lang = 'en') {
-	switch ($lang) {
-		
-		case 'en':
-		default:
-		$html_lang = "\n".'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">';
-		break;
-		
-	}
+function declare_html_lang($lang = 'en', $namespaces = '') {
+	$lang = (empty($lang)) ? 'en' : $lang ;
+	$namespaces = (empty($namespaces)) ? '' : ' '.trim($namespaces) ;
+	$html_lang = "\n".'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="'.$lang.'" lang="'.$lang.'"'.$namespaces.'>';
 	return $html_lang;		
 }
 

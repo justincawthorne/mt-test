@@ -140,6 +140,7 @@
 			while($row = $result->fetch_assoc()) { 
 				$element = strtolower($row['element_name']);
 				$key 	= trim($row['property_name']);
+				$row['property_value'] = stripslashes_deep($row['property_value']);
 				$data[$element][$key] = trim($row['property_value']);
 			}
 		}

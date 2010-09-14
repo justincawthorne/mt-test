@@ -897,13 +897,13 @@
 
 	function get_links($type = '') {
 		$conn = reader_connect();
-		$query = "SELECT * FROM links";
+		$query = "SELECT *, IF(sort = '0', 1, 0) AS nullsort FROM links";
 		if(!empty($type)) {
 			$query .= " WHERE category LIKE '".$conn->real_escape_string($type)."'";	
 		} else {
 			$query .= " WHERE category NOT IN('site_rss','site_menu','site_head')";
 		}
-		$query .= " ORDER BY category, id DESC";
+		$query .= " ORDER BY category, nullsort, sort, id DESC";
 		$result = $conn->query($query);
 		$data = array();
 		while($row = $result->fetch_assoc()) { 
@@ -940,15 +940,9 @@
 			$config_layout = $config['layout'];
 		}
 		$conn = reader_connect();
-	// results to show per page
-		$per_page = $config_layout['per_page'];
-	// set up pagination
-		$page_no = (isset($_GET['page'])) ? (int)$_GET['page'] : '1';
-	// calculate lower query limit value
-		$from = (($page_no * $per_page) - $per_page);
-	// sanitize search term
+		// sanitize search term
 		$safe_term = $conn->real_escape_string($term);
-	// build query
+		// build query
 		$query = "SELECT
 					articles.id, 
 				 	articles.title, 
@@ -977,48 +971,7 @@
 						AGAINST ('".$safe_term."' in boolean mode) 
 					HAVING score > 0 
 				ORDER BY score DESC, date_uploaded DESC";
-		// add pagination
-		$query_paginated = $query." LIMIT ".(int)$from.", ".(int)$per_page;
-		$result = $conn->query($query_paginated);
-		// get total results
-		$total_result = $conn->query($query);
-		$total_articles = $total_result->num_rows;
-		$total_pages = ceil($total_articles / $per_page);
-		$data = array();
-		while($row = $result->fetch_assoc()) {
-			$row = stripslashes_deep($row);
-			// do we need a summary?
-			if( (empty($row['summary'])) && ($config_layout['list_style'] == 'summary') ) {
-				$row['summary'] = create_summary($row['body']);
-			}
-			// do we need an intro
-			if($config_layout['list_style'] == 'intro') {
-				$row['intro'] = get_intro($row['body']);
-				if(empty($row['intro'])) {
-					$row['intro'] = '<p>'.create_summary($row['body']).'</p>';
-				}
-			}
-			// do we need the full body?
-			if($config_layout['list_style'] != 'full') {
-				unset($row['body']);
-			} else {
-				$row['body'] = convert_relative_urls($row['body']);
-			}
-			// create links
-			$link = ($config_layout['url_style'] == 'blog') 
-				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($row['date_uploaded'])).'/'.$row['url'].'/'
-				: WW_REAL_WEB_ROOT.'/'.$row['category_url'].'/'.$row['url'].'/';
-			$row['link'] = $link;
-			// get tags
-			$tags = get_article_tags($row['id']);
-			$row['tags'] = (!empty($tags)) ? $tags : '' ;
-			// add page counts
-			$row['total_pages'] = $total_pages;
-			$row['total_found'] = $total_articles;
-			$data[] = $row;
-		}
-		$result->close();
-		$total_result->close(); 
+		$data = compile_article_listing($query, $config_layout);
 		return $data;
 	}
 
@@ -1038,13 +991,6 @@
 			$config = get_settings('layout');
 			$config_layout = $config['layout'];
 		}
-		$conn = reader_connect();
-		// results to show per page
-		$per_page = $config_layout['per_page'];
-		// set up pagination
-		$page_no = (isset($_GET['page'])) ? (int)$_GET['page'] : '1';
-		// calculate lower query limit value
-		$from = (($page_no * $per_page) - $per_page);
 		$query = "SELECT
 					articles.id, 
 				 	articles.title, 
@@ -1097,55 +1043,95 @@
 		}
 		// sort order
 		$query .= " ORDER BY date_uploaded DESC";
-		// add pagination
-		$query_paginated = $query." LIMIT ".(int)$from.", ".(int)$per_page;
+		$data = compile_article_listing($query, $config_layout);
+		return $data;
+	}
+
+/**
+ * compile_article_listing
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function compile_article_listing($query, $config_layout = '') {
+		if(empty($query)) {
+			return false;
+		}
+		// get layout config from database
+		if(empty($config_layout)) {
+			$config = get_settings('layout');
+			$config_layout = $config['layout'];
+		}
+		
+		// set up pagination
+		$per_page 	= $config_layout['per_page'];
+		$page_no 	= (isset($_GET['page'])) ? (int)$_GET['page'] : '1';
+		$from 		= (($page_no * $per_page) - $per_page);
+		$query_paginated = $query." LIMIT ".(int)$from.", ".(int)$per_page;	
+		
+		// run query
+		$conn = reader_connect();
 		$result = $conn->query($query_paginated);
 		// get total results
-		$total_result = $conn->query($query);
+		$total_result 	= $conn->query($query);
 		$total_articles = $total_result->num_rows;
-		$total_pages = ceil($total_articles / $per_page);
-		$data = array();
+		$total_pages 	= ceil($total_articles / $per_page);
+		
+		// get a complete id list of return articles
+		$id_list 	= array();
+		while($total_row = $total_result->fetch_assoc()) {
+			$id_list[] = $total_row['id'];
+		}
+		
+		// get results
+		$data 		= array();
 		while($row = $result->fetch_assoc()) {
 			$row = stripslashes_deep($row);
+			
 			// create links
-			$link = ($config_layout['url_style'] == 'blog') 
+			$row['link'] = ($config_layout['url_style'] == 'blog') 
 				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($row['date_uploaded'])).'/'.$row['url'].'/'
 				: WW_REAL_WEB_ROOT.'/'.$row['category_url'].'/'.$row['url'].'/';
-			$row['link'] = $link;			
+		
 			// do we need a summary?
 			if( (empty($row['summary'])) && ($config_layout['list_style'] == 'summary') ) {
 				$row['summary'] = create_summary($row['body']);
 			}
+			
 			// do we need an intro
 			if($config_layout['list_style'] == 'intro') {
 				$row['intro'] = get_intro($row['body']);
 				if(empty($row['intro'])) {
 					$row['intro'] = 
-					'<p>'.extract_sentences($row['body'],50).' <a href="'.$link.'">(continues...)</a></p>';
+					'<p>'.extract_sentences($row['body'],50).' <a href="'.$row['link'].'">(continues...)</a></p>';
 				}
 			}
+			
 			// do we need the full body?
 			if($config_layout['list_style'] != 'full') {
 				unset($row['body']);
 			} else {
 				$row['body'] = convert_relative_urls($row['body']);
 			}
-
+	
 			// get tags
 			$tags = get_article_tags($row['id']);
 			$row['tags'] = (!empty($tags)) ? $tags : '' ;
-			// add page counts
+			// add page counts and compile into array
 			$row['total_pages'] = $total_pages;
 			$row['total_found'] = $total_articles;
+			$row['id_list'] 	= $id_list;
 			$data[] = $row;
 		}
 		$result->close();
 		$total_result->close(); 
-		return $data;
+		return $data;			
 	}
 
-
-	
 /**
  * list_podcasts
  * 
@@ -1229,6 +1215,93 @@
 		return $data;		
 	}
 
+/**
+ * get_author_filters
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	function get_author_filters($article_ids) {
+		if(empty($article_ids)) {
+			return false;
+		}
+		$id_list = implode(',',$article_ids);
+		$conn = reader_connect();
+		$query = "SELECT DISTINCT authors.name, authors.url
+					FROM articles
+					LEFT JOIN authors ON authors.id = articles.author_id
+					WHERE articles.id IN (".$id_list.")
+					ORDER BY authors.name ASC";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+		$result->close();
+		return $data;
+	}
+	
+/**
+ * get_category_filters
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	function get_category_filters($article_ids) {
+		if(empty($article_ids)) {
+			return false;
+		}
+		$id_list = implode(',',$article_ids);
+		$conn = reader_connect();
+		$query = "SELECT DISTINCT categories.title, categories.url
+					FROM articles
+					LEFT JOIN categories ON categories.id = articles.category_id
+					WHERE articles.id IN (".$id_list.")
+					ORDER BY categories.title ASC";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+		$result->close();
+		return $data;
+	}
+
+/**
+ * get_tag_filters
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+	function get_tag_filters($article_ids) {
+		if(empty($article_ids)) {
+			return false;
+		}
+		$id_list = implode(',',$article_ids);
+		$conn = reader_connect();
+		$query = "SELECT DISTINCT tags.title, tags.url
+					FROM tags_map
+					LEFT JOIN tags ON tags.id = tags_map.tag_id
+					WHERE tags_map.article_id IN (".$id_list.")
+					ORDER BY tags.title ASC";
+		$result = $conn->query($query);
+		$data = array();
+		while($row = $result->fetch_assoc()) {
+			$data[] = $row;
+		}
+		$result->close();
+		return $data;
+	}
+		
 /**
  * -----------------------------------------------------------------------------
  * SINGLE ARTICLE

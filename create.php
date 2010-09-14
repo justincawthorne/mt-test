@@ -295,7 +295,7 @@ include_once('ww_config/model_functions.php');
 	('site', 'subtitle', 'A new site powered by Wicked Words, an Evil Chicken production', 'A new site powered by Wicked Words, an Evil Chicken production', 'textarea', NULL, 'a tagline, or subtitle, for your site'),	
 	('site', 'theme', '/default', '/default', 'select', NULL, 'theme to use for site'),	
 	('site', 'doctype', 'xhtml11', 'xhtml11', 'select', 'xhtml10,xhtml11,html5', 'the doctype for your site'),
-	('site', 'html_lang', 'en', 'en', 'select', 'en', 'the default language for your site'),
+	('site', 'html_lang', 'en', 'en', 'text', NULL, 'the default language for your site (ISO 2 letter language code)'),
 	('site', 'header_panel_html', '', '', 'textarea', NULL, 'enter any html you wish to place in the header_panel section'),	
 	('site', 'xml_namespaces', '', '', 'textarea', NULL, 'enter any additional namespaces you require as a string'),
 	('meta', 'author', 'Wicked Words', 'Wicked Words', 'text', NULL, 'The author of the site. Overwritten on article pages by the article author.'),

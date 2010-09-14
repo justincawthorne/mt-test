@@ -416,11 +416,13 @@ ul.links_listing div.link_title {
 	font-size: 1.125em;
 	margin-left: 4px;
 }
-ul.links_listing div.link_url {
+ul.links_listing div.link_order {
+	clear: left;
+	margin-left: 4px;
+	width: 30px;
 }
 ul.links_listing div.link_summary {
-	clear: left;
-	margin-left: 264px;
+	margin-left: 230px;
 	width: 360px;
 }
 ul.links_listing div.link_attributes {
@@ -878,6 +880,13 @@ div.image_preview img {
 	background-color: #f4f4f4;
 	border: solid 1px #ccc;
 	padding: 2px;
+}
+.snippet form input.optional,
+.snippet form textarea.optional {
+	border: dashed 1px #ccc;
+}
+.snippet form input.short_input {
+	width: auto;
 }
 .snippet form select:focus,
 .snippet form input:focus,

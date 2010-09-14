@@ -94,15 +94,22 @@ a {
 	margin-top: 12px;
 	margin-bottom: 2px;
 }
-#content #bouncer_loginform input {
+#content #bouncer_loginform input[type="text"],
+#content #bouncer_loginform input[type="email"],
+#content #bouncer_loginform input[type="password"] {
+	border: solid 1px #999;
+	padding: 2px;
 	margin-bottom: 12px;
 	margin-top: 2px;
 	width: 180px;
 	height: 22px;
 	text-align: center;
 }
-#content #bouncer_loginform input:focus {
-	border-color: #660000;
+#content #bouncer_loginform input[type="text"]:focus,
+#content #bouncer_loginform input[type="email"]:focus,
+#content #bouncer_loginform input[type="password"]:focus {
+	border: solid 1px #660000;
+	height: 22px;
 }
 #content #bouncer_loginform #pass {
 }
@@ -120,10 +127,8 @@ a {
 	vertical-align: middle;
 
 }
-#content #bouncer_loginform input[type="submit"] {
-	width: 80px;
-	height: auto;
-	margin-top: 4px;
+#content #bouncer_loginform input[type="submit"]:focus {
+	color: #660000;
 }
 
 

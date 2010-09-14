@@ -89,7 +89,7 @@
 		
 	}
 	
-// cancel delete image
+// confirm delete image
 	
 	if( (isset($_POST['confirm_delete_image'])) && ($_POST['confirm_delete_image'] == 'Yes') ) {
 
@@ -100,7 +100,14 @@
 
 	}
 	
+// cancel delete attachment
+	
+	if( (isset($_POST['cancel_delete_image'])) && ($_POST['cancel_delete_image'] == 'No') ) {
 
+		$image_id = (int)$_GET['image_id'];
+		header('Location: '.WW_WEB_ROOT.'/ww_edit/index.php?page_name=images&image_id='.$image_id);
+
+	}
 
 // get image details or list of images
 	

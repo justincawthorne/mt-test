@@ -174,8 +174,12 @@ function bouncer_verify_email($email) {
 		$header .= ' 	
 			<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 		</head>
-		<body>
 		';
+		if($page_name = "Login Page") {
+			$header .= '<body onload="document.forms[0].email.focus()">';	
+		} else {
+			$header .= '<body>';
+		}
 		return $header;
 	}
 
@@ -310,7 +314,7 @@ function bouncer_verify_email($email) {
 			$login_form .=  '			
 				<h2>Please enter your email address and password to login</h2>
 				
-				<form id="bouncer_loginform" method="post" action="'.$target.'">
+				<form id="bouncer_loginform" name ="bouncer_loginform" method="post" action="'.$target.'">
 				
 				<p><label for="email">Email address:</label><br/>
 					<input name="email" type="email" id="email" /></p>

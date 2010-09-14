@@ -45,6 +45,15 @@
 		} else {
 			$error = $delete_status;
 		}
+	}
+	
+	// cancel delete tag
+		
+	if( (isset($_POST['cancel_delete_tag'])) && ($_POST['cancel_delete_tag'] == 'No') ) {
+	
+		$tag_id = (int)$_GET['tag_id'];
+		header('Location: '.$_SERVER["PHP_SELF"].'?page_name=tags&tag_id='.$tag_id);
+
 	}	
 
 

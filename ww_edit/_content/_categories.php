@@ -48,6 +48,15 @@
 		}
 	}
 	
+	// cancel delete tag
+		
+	if( (isset($_POST['cancel_delete_category'])) && ($_POST['cancel_delete_category'] == 'No') ) {
+	
+		$category_id = (int)$_GET['category_id'];
+		header('Location: '.$_SERVER["PHP_SELF"].'?page_name=categories&category_id='.$category_id);
+
+	}	
+	
 	// category list
 	
 	$categories_list = get_categories_admin();

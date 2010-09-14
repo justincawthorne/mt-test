@@ -196,7 +196,6 @@ include_once('../ww_config/view_functions.php');
 		$body_content['aside'] = '';
 		$body_content['footer'] = '';
 		*/
-	
 			
 	// header content - below is just for example
 	
@@ -233,6 +232,8 @@ include_once('../ww_config/view_functions.php');
 			
 	// get aside content
 
+		/* $body_content['aside'] = insert_aside($aside_content); */
+
 		if(file_exists($theme_content_folder.'/_aside.php')) {
 			ob_start();
 			include($theme_content_folder.'/_aside.php');
@@ -240,15 +241,12 @@ include_once('../ww_config/view_functions.php');
 		    ob_end_clean();	
 		}
 	
-		//$body_content['aside'] = insert_aside($aside_content);
-		
 	// buffer main content and insert into a variable
 
 	    ob_start();
 		include $content_partial;
 	    $body_content['main'] = ob_get_contents();
 	    ob_end_clean();	
-
 
 	/*
 		with a builder file we can use a different html structure

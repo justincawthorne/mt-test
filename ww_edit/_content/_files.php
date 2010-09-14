@@ -40,6 +40,14 @@
 		
 	}
 
+	// cancel delete file
+		
+	if( (isset($_POST['cancel_delete_file'])) && ($_POST['cancel_delete_file'] == 'No') ) {
+	
+		header('Location: '.$_SERVER["PHP_SELF"].'?page_name=files');
+
+	}
+
 // delete folder
 
 	if(isset($_POST['remove_folder'])) {

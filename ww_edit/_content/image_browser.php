@@ -205,13 +205,13 @@
 			<input name="thumb_file" type="file" size="12" id="thumb_file"/></p>
 		
 		<p><label for="title">Image title (optional)</label> 
-			<input name="title" type="text" name="title" size="24"/></p>
+			<input name="title" type="text" size="24"/></p>
 		
 		<p><label for="alt">Alt text (optional)</label> 
-			<input name="alt" type="text" name="alt"  size="24"/></p>
+			<input name="alt" type="text" size="24"/></p>
 			
 		<p><label for="width">New width (px) (optional)</label> 
-			<input name="width" type="text" name="width" size="3"/>	
+			<input name="width" type="text" size="3"/>	
 					
 			<input type="submit" name="upload_image" value="upload" /></p>
 	</form>

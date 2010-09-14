@@ -572,6 +572,12 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
  */
 
 	function build_write_form($article_data, $config) {
+		// construct link
+		if(!empty($article_data['id'])) {
+			$article_data['link'] = ($config['layout']['url_style'] == 'blog') 
+				? WW_REAL_WEB_ROOT.'/'.date('Y/m/d',strtotime($article_data['date_uploaded'])).'/'.$row['url'].'/'
+				: WW_REAL_WEB_ROOT.'/'.$article_data['category_url'].'/'.$article_data['url'].'/';
+		}
 		// start tabs
 		$attachments_total = count($article_data['attachments']);
 		$form = '
@@ -601,6 +607,8 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 		}
 		$form .= '
 				</div>';
+
+		// output form		
 		$form .= form_article_tab($article_data);
 		$form .= form_attachments_tab($article_data, $config);
 		$form .= form_seo_tab($article_data);
@@ -647,8 +655,14 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 	
 	function form_article_tab($article_data) {
 		
+		// link outout
+		if(isset($article_data['link'])) {
+			$link = '<p><span class="note">'.$article_data['link'].'</span></p>';
+		} else {
+			$link = '';
+		}
+		
 		// authors
-
 		if( (empty($_SESSION[WW_SESS]['guest'])) || ($_SESSION[WW_SESS]['level'] == 'editor') ) {
 			
 			$author_list = get_authors_admin();
@@ -711,7 +725,8 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 		// build form
 		$html = '
 			<div id="tab_article">
-				<h2>Article</h2>
+
+					'.$link.'
 				<p>
 					<label for="title">Title</label>
 					<input type="text" name="title" title="type article title" value="'.$article_data['title'].'" />
@@ -769,17 +784,19 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 					</select>
 				</p>
 			';
-			// option to update url version of post title
-			if(!empty($article_data['url'])) {
-				$html .= '
-				<p>
-					<label for="url">URL title</label>
-					<input type="text" name="url" value="'.$article_data['url'].'" readonly="readonly"/>
-					<span class="note">
-						<input type="checkbox" name="update_url" value="1"/>&nbsp;tick here if you want the url-friendly version of the post title updated<br />(note that this will change the permanent url for your article)
-					</span>
-				</p>';
-			}
+
+		}
+		// option to update url version of post title
+		if(!empty($article_data['url'])) {
+			$pre_checked = ($article_data['status'] == 'D') ? ' checked="checked"' : '' ;
+			$html .= '
+			<p>
+				<label for="url">URL title</label>
+				<input type="text" name="url" value="'.$article_data['url'].'" readonly="readonly"/>
+				<span class="note">
+					<input type="checkbox" name="update_url" value="1"'.$pre_checked.'/>&nbsp;tick here if you want the url-friendly version of the post title updated<br />(note that this will change the permanent url for your article)
+				</span>
+			</p>';
 		}
 		$html .= '</div>';
 		return $html;
@@ -880,7 +897,7 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 	
 		$html = '
 			<div id="tab_attachments">
-				<h2>Attachments</h2>
+
 				<p>
 					<label for="attachments">Current</label>
 					';
@@ -949,21 +966,21 @@ function show_admin_head($site_title, $page_title = '', $theme = 'desktop') {
 	function form_seo_tab($article_data) {
 		$html = '
 			<div id="tab_seo">
-				<h2>SEO Data (optional)</h2>
+
 				<p class="descriptor">The following fields allow you to optionally specify a keyword-rich page title and/or description for this article, as well as relevant keywords.</p>
 				<p>
 					<label for="seo_title">SEO Title</label>
-					<textarea name="seo_title" id="seo_title" cols="40" rows="3">'.$article_data['seo_title'].'</textarea>
+					<textarea name="seo_title" cols="40" rows="3" class="optional">'.$article_data['seo_title'].'</textarea>
 					<span class="note">(main article title used if left blank)</span>
 				</p>
 				<p>
 					<label for="seo_desc">SEO Description</label>
-					<textarea name="seo_desc" id="seo_desc" cols="40" rows="3">'.$article_data['seo_desc'].'</textarea>
+					<textarea name="seo_desc" cols="40" rows="3" class="optional">'.$article_data['seo_desc'].'</textarea>
 					<span class="note">(main article summary used if left blank)</span>
 				</p>
 				<p>
 					<label for="seo_keywords">SEO Keywords</label>
-					<textarea name="seo_keywords" id="seo_keywords" cols="40" rows="3">'.$article_data['seo_keywords'].'</textarea>
+					<textarea name="seo_keywords" cols="40" rows="3" class="optional">'.$article_data['seo_keywords'].'</textarea>
 					<span class="note">(site keywords used if left blank)</span>
 				</p>
 			</div>';

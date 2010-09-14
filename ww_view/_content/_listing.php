@@ -1,4 +1,9 @@
 <?php
+// some variables
+
+	$show_subcategories = 1;
+	$show_filters 		= 1;
+
 
 // meta tags for head section - slightly different ones for a search results page
 	
@@ -17,34 +22,77 @@
 		
 	} else {
 		
-		// what are we looking for?
-		
 		// category
+		
 		if( (isset($_GET['category_id'])) && (isset($_GET['category_url'])) ) {
-			$page_title_text[] = "filed in ".get_category_title($_GET['category_id']);
 			
 			// slightly more complex for categories in case of parent/child categories
 
 			$category_details = get_category_details($_GET['category_id']);
 			
 			$parent_category = (!empty($category_details['parent_title'])) 
-				? '<a href="'.WW_WEB_ROOT.'/'.$category_details['parent_url'].'">'.$category_details['parent_title'].'</a> &gt; ' 
+				? '<a href="'.WW_WEB_ROOT.'/'.$category_details['parent_url'].'/">'.$category_details['parent_title'].'</a> &gt; ' 
 				: '' ;
 			
-			$page_header_text[] = (!empty($parent_category)) ? $parent_category.$category_details['title'] : $category_details['title'] ;
+			$page_title_text[] = "filed in ".$category_details['title'];
+			$page_header_text[] = $parent_category.$category_details['title'];
+			
+			// add optional link to feed for category
+	
+			if(!empty($config['admin']['show_all_feeds'])) {
+				$config['site']['link'][] = array(
+							'rel' 	=>	'alternate',
+							'type'	=> 'application/rss+xml',
+							'title' =>	'RSS Feed for '.$category_details['title'].' category',
+							'href'	=>	WW_WEB_ROOT.'/rss/'.$_GET['category_url']
+										);				
+			}
+
 			
 		}
 		
 		// author
+		
 		if( (isset($_GET['author_id'])) && (isset($_GET['author_url'])) ) {
-			$page_title_text[] = "by ".get_author_name($_GET['author_id']);
-			$page_header_text[] = 'author: '.get_author_name($_GET['author_id']);
+			
+			$author_name = get_author_name($_GET['author_id']);
+			
+			$page_title_text[] = 'by '.$author_name;
+			$page_header_text[] = 'author: '.$author_name;
+			
+			// add optional link to feed for author
+	
+			if(!empty($config['admin']['show_all_feeds'])) {
+				$config['site']['link'][] = array(
+							'rel' 	=>	'alternate',
+							'type'	=> 	'application/rss+xml',
+							'title' =>	'RSS Feed for '.$author_name,
+							'href'	=>	WW_WEB_ROOT.'/rss/author/'.$_GET['author_url']
+										);				
+			}
+			
 		}
 		
 		// tag
+		
 		if( (isset($_GET['tag_id'])) && (isset($_GET['tag_url'])) ) {
-			$page_title_text[] = "tagged ".get_tag_title($_GET['tag_id']);
-			$page_header_text[] = 'tag: '.get_tag_title($_GET['tag_id']);
+			
+			$tag_title = get_tag_title($_GET['tag_id']);
+			
+			$page_title_text[] = 'tagged '.$tag_title;
+			$page_header_text[] = 'tag: '.$tag_title;
+
+			// add optional link to feed for tag
+	
+			if(!empty($config['admin']['show_all_feeds'])) {
+				$config['site']['link'][] = array(
+							'rel' 	=>	'alternate',
+							'type'	=> 	'application/rss+xml',
+							'title' =>	'RSS Feed for tag '.$tag_title,
+							'href'	=>	WW_WEB_ROOT.'/rss/tag/'.$_GET['tag_url']
+										);				
+			}
+			
 		}
 		
 		// date
@@ -89,21 +137,107 @@
 	echo show_page_header($page_header,$total_articles);
 	
 	// any sub categories to list
-	
-	if(isset($category_details['child'])) {
-		echo '<p class="subcategories"><strong>Sub-categories:</strong> ';
-		$delimiter = '';
-		foreach($category_details['child'] as $child) {
-			echo $delimiter.' <a href="'.WW_WEB_ROOT.'/'.$child['url'].'">'.$child['title'].'</a>';
-			$delimiter = ',';
-		}
-		echo '</p>';
-	}
 
+	if(!empty($show_subcategories)) {
+		if(isset($category_details['child'])) {
+			echo '
+			<ul class="filter_list">
+				<li class="filter_heading">Sub-categories:</li> ';
+			foreach($category_details['child'] as $child) {
+				echo '
+				<li><a href="'.WW_WEB_ROOT.'/'.$child['url'].'">'.$child['title'].'</a></li>';
+			}
+			echo '</ul>';
+		}
+	}
 	
-	$disqus = $config['connections']['disqus_shortname'];
+	// any filters to show
 	
-	echo show_listing($articles, $page_title, $disqus);
+	if(!empty($show_filters)) {
+		
+		$id_list = $articles[0]['id_list'];
+		
+		$link_base = (isset($_GET['category_url'])) ? WW_WEB_ROOT.'/'.$_GET['category_url'] : WW_WEB_ROOT ;
+		
+		$author_param = (isset($_GET['author_url'])) ? '/author/'.$_GET['author_url'] : '' ;
+		$tag_param = (isset($_GET['tag_url'])) ? '/tag/'.$_GET['tag_url'] : '' ;
+		
+		// author filters
+		
+		if(!isset($_GET['author_url'])) {
+			$author_filters = get_author_filters($id_list);
+			if(!empty($author_filters)) {
+				echo '
+				<ul class="filter_list">
+					<li class="filter_heading">Filter by author:</li> ';
+				foreach($author_filters as $af) {
+					echo '
+					<li><a href="'.$link_base.'/author/'.$af['url'].$tag_param.'/">'.$af['name'].'</a></li>';
+				}
+				echo '</ul>';				
+			}
+			
+		}
+
+		// category filters
+		
+		if(!isset($_GET['category_url'])) {
+			$category_filters = get_category_filters($id_list);
+			if(!empty($category_filters)) {
+				
+				echo '
+				<ul class="filter_list">
+					<li class="filter_heading">Filter by category:</li> ';
+				foreach($category_filters as $cf) {
+					echo '
+					<li><a href="'.WW_WEB_ROOT.'/'.$cf['url'].$author_param.$tag_param.'/">'.$cf['title'].'</a></li>';
+				}
+				echo '</ul>';				
+			}
+			
+		}
+
+		// author filters
+		
+		if(!isset($_GET['tag_url'])) {
+			$tag_filters = get_tag_filters($id_list);
+			if(!empty($tag_filters)) {
+				echo '
+				<ul class="filter_list">
+					<li class="filter_heading">Filter by tag:</li> ';
+				foreach($tag_filters as $tf) {
+					echo '
+					<li><a href="'.$link_base.$author_param.'/tag/'.$tf['url'].'/">'.$tf['title'].'</a></li>';
+				}
+				echo '</ul>';				
+			}
+			
+		}
+
+	}
+	
+	// remove parameters
+		echo '
+		<ul class="filter_list remove_filter_list">
+			<li class="filter_heading">Remove:</li> ';
+		if(isset($_GET['author_url'])) {
+			echo '
+			<li>Author <a href="'.$link_base.$tag_param.'">'.$author_name.'</a></li>';
+		}
+		if(isset($_GET['category_url'])) {
+			echo '
+			<li>Category <a href="'.WW_WEB_ROOT.$author_param.$tag_param.'">'.$category_details['title'].'</a></li>';
+		}
+		if(isset($_GET['tag_url'])) {
+			echo '
+			<li>Tag <a href="'.$link_base.$author_param.'">'.$tag_title.'</a></li>';
+		}
+		echo '</ul>';		
+	
+	
+	// output listing
+	
+	echo show_listing($articles, $page_title, $config['connections']['disqus_shortname']);
 	
 	if($total > $config['layout']['per_page']) {
 		echo show_listing_nav($articles[0]['total_pages'], $config['layout']['per_page']);

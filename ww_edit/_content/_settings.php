@@ -91,6 +91,7 @@
 		$result = $conn->query($query);
 		$data = array();
 		while($row = $result->fetch_assoc()) { 
+			$row = stripslashes_deep($row);
 			$element = strtolower($row['element_name']);
 			$data[$element][] = $row;
 		}

@@ -132,6 +132,26 @@ p, ul, ol, blockquote {
 
 /* --- article sections --- */
 
+ul.filter_list {
+	overflow: auto;	
+}
+ul.filter_list li {
+	float: left;
+	margin-right: 8px;
+}
+ul.filter_list li:after {
+	content: ", ";
+}
+ul.filter_list li.filter_heading {
+	font-weight: bold;
+}
+ul.filter_list li:first-child:after {
+	content: none;
+}
+ul.filter_list li:last-child:after {
+	content: none;
+}
+
 p.byline {
 	font-weight: bold;	
 	color: #666;

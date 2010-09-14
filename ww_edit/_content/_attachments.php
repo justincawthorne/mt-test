@@ -81,6 +81,15 @@
 		}
 
 	}
+	
+// cancel delete attachment
+	
+	if( (isset($_POST['cancel_delete_attachment'])) && ($_POST['cancel_delete_attachment'] == 'No') ) {
+
+		$attachment_id = (int)$_POST['attachment_id'];
+		header('Location: '.WW_WEB_ROOT.'/ww_edit/index.php?page_name=attachments&attachment_id='.$attachment_id);
+
+	}
 
 // delete folder
 
@@ -246,6 +255,7 @@
 				<form action="'.$action_url.'" method="post" name="confirm_delete_attachment_form">
 					<input name="filename" type="hidden" value="'.$attachment['filename'].'"/>
 					<input name="ext" type="hidden" value="'.$attachment['ext'].'"/>
+					<input name="attachment_id" type="hidden" value="'.$attachment['id'].'"/>
 					<input name="confirm_delete_attachment" type="submit" value="Yes"/>
 					<input name="cancel_delete_attachment" type="submit" value="No" />
 				</form>

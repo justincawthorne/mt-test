@@ -662,9 +662,10 @@
 			return false;
 		}
 		$conn = author_connect();
-		$query = "SELECT * 
+		$query = "SELECT articles.*, categories.url as category_url
 				FROM articles 
-				WHERE id = ".(int)$article_id;
+				LEFT JOIN categories ON articles.category_id = categories.id
+				WHERE articles.id = ".(int)$article_id;
 		$comment_query = "
 				SELECT COUNT(id) as total
 				FROM comments 
@@ -873,7 +874,7 @@
 
 	function validate_article_post_data() {
 		$article_data['error'] = array();
-		// set status
+		// set status - archive, draft, published, withdrawn
 		$status_list = array('A','D','P','W');
 		if(isset($_POST['draft'])) {
 			$article_data['status'] =  'D';
@@ -891,16 +892,24 @@
 		// title - required
 		if( (isset($_POST['title'])) && (!empty($_POST['title'])) ) {
 			$article_data['title'] = clean_input($_POST['title']);
-			// update url title only if article is new, or in draft status, or update_url is checked
-			$article_data['url'] = ( (empty($article_data['id'])) || ($article_data['status'] == 'D') || (!empty($_POST['update_url'])) )
-				? create_url_title($article_data['title']) 
-				: clean_input($_POST['url']) ;
-			// check for duplicates
-			$article_data['url'] = check_url_title($article_data['url'],$article_data['id']);
 		} else {
 			$article_data['error'][] = "No title entered";
 		}
 		
+		// url title - update url title only if article is new, url is empty, or update_url is checked
+		if( (empty($article_data['id'])) || (!empty($_POST['update_url'])) || (empty($_POST['url'])) ) {
+		
+			$article_data['url'] = create_url_title($article_data['title']);
+			
+		} else {
+		
+			$article_data['url'] = clean_input($_POST['url']) ;
+			
+		}
+		
+		// check for url duplicates
+		$article_data['url'] = check_url_title($article_data['url'],$article_data['id']);
+					
 		// summary
 		$article_data['summary'] = (isset($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
 		
@@ -1025,6 +1034,7 @@
 			$result['action'] = 'inserted';
 			$result['id'] = $new_id;
 			$result['title'] = $post_data['title'];
+			$result['url'] = $post_data['url'];
 			$result['status'] = $post_data['status'];
 			$result['category_id'] = $post_data['category_id'];
 			$result['date_uploaded'] = $post_data['date_uploaded'];
@@ -1086,6 +1096,7 @@
 			$result['action'] = 'updated';
 			$result['id'] = $post_data['id'];
 			$result['title'] = $post_data['title'];
+			$result['url'] = $post_data['url'];
 			$result['status'] = $post_data['status'];
 			$result['category_id'] = $post_data['category_id'];
 			$result['date_uploaded'] = $post_data['date_uploaded'];
@@ -1194,7 +1205,19 @@
  */	
  	
 	function delete_article($article_id) {
-		
+		$article_id = (int)$article_id;
+		if(empty($article_id)) {
+			echo 'no id';
+			return false;
+		}
+		$conn = author_connect();
+		$query = "DELETE FROM articles WHERE id = ".$article_id;
+		$result = $conn->query($query);
+		if(!$result) {
+			return $conn->error;
+		} else {
+			return true;
+		}		
 	}
 
 /**
@@ -1269,6 +1292,9 @@
  */	
 	
 	function check_url_title($url, $article_id = 0) {
+		if(empty($url)) {
+			return;
+		}
 		$conn = author_connect();
 		$query = "SELECT COUNT(id) AS total
 					FROM articles 
@@ -3200,7 +3226,9 @@
 
 	function get_links() {
 		$conn = reader_connect();
-		$query = "SELECT * FROM links ORDER BY category, id DESC";
+		$query = "SELECT 
+					*, IF(sort = '0', 1, 0) AS nullsort
+					FROM links ORDER BY category, nullsort, sort, id DESC";
 		$result = $conn->query($query);
 		$data = array();
 		while($row = $result->fetch_assoc()) { 
@@ -3298,6 +3326,7 @@
 		$summary 	= (!empty($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
 		$category 	= (!empty($_POST['category'])) ? clean_input($_POST['category']) : '' ;
 		$category 	= (!empty($_POST['new_category'])) ? clean_input($_POST['new_category']) : $category ;
+		$sort		= (!empty($_POST['sort'])) ? (int)$_POST['sort'] : 0 ;
 		$insert = "INSERT INTO links
 				(title, url, attributes, summary, category)
 				VALUES
@@ -3306,7 +3335,8 @@
 				'".$conn->real_escape_string($_POST['url'])."',
 				'".$conn->real_escape_string($attributes)."',
 				'".$conn->real_escape_string($summary)."',
-				'".$conn->real_escape_string($category)."'
+				'".$conn->real_escape_string($category)."',
+				'".(int)$sort."'
 				)";
 		$result = $conn->query($insert);
 		if(!$result) {
@@ -3342,12 +3372,14 @@
 		$attributes	= (!empty($_POST['attributes'])) ? clean_input($_POST['attributes']) : '' ;
 		$summary 	= (!empty($_POST['summary'])) ? clean_input($_POST['summary']) : '' ;
 		$category 	= (!empty($_POST['category'])) ? clean_input($_POST['category']) : '' ;
+		$sort		= (!empty($_POST['sort'])) ? (int)$_POST['sort'] : 0 ;
 		$query = "UPDATE links SET
 					title = '".$conn->real_escape_string($title)."',
 					url = '".$conn->real_escape_string($_POST['url'])."',
 					attributes = '".$conn->real_escape_string($attributes)."',
 					summary = '".$conn->real_escape_string($summary)."',
-					category = '".$conn->real_escape_string($category)."'
+					category = '".$conn->real_escape_string($category)."',
+					sort = '".(int)$sort."'
 					WHERE id = ".(int)$link_id;
 		$result = $conn->query($query);
 		if(!$result) {
