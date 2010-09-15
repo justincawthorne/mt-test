@@ -492,6 +492,9 @@ div.full_listing {
 	font-size: 100%;
 	margin-bottom: 0;
 }
+.snippet a {
+	outline: none;
+}
 .snippet span.list_item {
 	float: left;
 	width: 75%;	
@@ -526,6 +529,27 @@ div.full_listing {
 .snippet form input:focus{
 	background-color: #eee;
 	border: solid 1px #999;
+}
+
+ul.twitter_feed {
+	
+}
+ul.twitter_feed li {
+	
+}
+ul.twitter_feed li span {
+	display:block;
+}
+ul.twitter_feed li span.tweet {
+	
+}
+ul.twitter_feed li span.tweet_date {
+	font-size: 0.75em;
+	color: #777;
+	text-align: right;
+}
+ul.twitter_feed li span.twitter_link {
+	font-weight: bold;
 }
 
 /*

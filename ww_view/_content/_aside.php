@@ -32,6 +32,15 @@
 	$months_list 			= get_months();
 	
 	$search_form 			= show_search_form();
+	
+	$aside_snippet['twitter_feed'] = '';
+	
+	if(!empty($config['connections']['twitter_username'])) {
+		
+		$twitter_username = $config['connections']['twitter_username'];
+		$twitter_feed = get_twitter_feed($twitter_username);
+		$aside_snippet['twitter_feed'] = build_snippet('Recent twitterings...',$twitter_feed);
+	}
 
 
 
@@ -141,7 +150,8 @@
 										$aside_snippet['categories_list'],
 										$aside_snippet['tags_list'],
 										$aside_snippet['months_list'],
-										$aside_snippet['feeds']
+										$aside_snippet['feeds'],
+										$aside_snippet['twitter_feed']
 										);
 		$aside_content['outer'] = array();
 		$aside_content['lower']	= array();	

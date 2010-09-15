@@ -1615,9 +1615,73 @@ function insert_favicon($theme = 'default') {
 			</form>';
 		return $form;		
 	}
+
+/**
+ * show_twitter_feed
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
+	function get_twitter_feed($username, $limit = 10) {
+		if(empty($username)) {
+			return false;
+		}
+		$url = 'http://twitter.com/statuses/user_timeline/'.$username.'.rss';
+		$tweets = import_rss($url, $limit);
+		if(empty($tweets)) {
+			return false;
+		}
+		$html = '
+		<ul class="twitter_feed">';
+		foreach($tweets as $tweet) {
+			// format date
+			$tweet_date = '<a href="'.$tweet['link'].'">'.date('F d \a\t H:i',strtotime($tweet['date'])).'</a>';
+			// get rid of the 'username: ' prepending each tweet
+			$tweet_text = str_replace($username.": ", "", $tweet['description']);
+			// replace @replies with link to other user's Twitter page
+			//$reply_pattern = '/@([A-Za-z0-9_-]+) /';
+			//$reply_link = '<a href="http://twitter.com/$1/" target="_blank">@$1</a> ';
+			//$tweet_text = preg_replace($reply_pattern, $reply_link, $tweet_text);
+			$tweet_text = twitterify($tweet_text);
+			// output
+			$html .= '
+			<li>
+				<span class="tweet">'.$tweet_text.'</span>
+				<span class="tweet_date">'.$tweet_date.'</span>
+			</li>';
+		}
+		$html .= '
+			<li>
+				<span class="twitter_link">
+				<a href="http://twitter.com/'.$username.'">follow me on Twitter</a>
+				</span>
+			</li>
+		</ul>';
+		return $html;
+	}
+
+/**
+ * twitterify
+ * 
+ * http://www.snipe.net/2009/09/php-twitter-clickable-links/
+ * 
+ * 
+ * 
+ */
+
+	function twitterify($ret) {
+		$ret = preg_replace("#(^|[\n ])([\w]+?://[\w]+[^ \"\n\r\t< ]*)#", "\\1<a href=\"\\2\" target=\"_blank\">\\2</a>", $ret);
+		$ret = preg_replace("#(^|[\n ])((www|ftp)\.[^ \"\t\n\r< ]*)#", "\\1<a href=\"http://\\2\" target=\"_blank\">\\2</a>", $ret);
+		$ret = preg_replace("/@(\w+)/", "<a href=\"http://www.twitter.com/\\1\" target=\"_blank\">@\\1</a>", $ret);
+		$ret = preg_replace("/#(\w+)/", "<a href=\"http://search.twitter.com/search?q=\\1\" target=\"_blank\">#\\1</a>", $ret);
+		return $ret;
+	}
 	
 /**
- * build_select_form
+ * show_search_form
  * 
  * 
  * 

@@ -1980,6 +1980,60 @@
 
 /**
  * -----------------------------------------------------------------------------
+ * RSS IMPORT
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * import_rss
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */	
+
+	function import_rss($url, $limit = 10) {
+		if(empty($url)) {
+			return false;
+		}
+		$ch = curl_init();
+		$timeout = 5; // set to zero for no timeout
+		curl_setopt ($ch, CURLOPT_URL, $url);
+		curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt ($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+		$xml = curl_exec($ch);
+		curl_close($ch);
+		if($xml == false) {
+			return false;
+		}
+		$xml = simplexml_load_string($xml);
+		$articles = array();
+		for($i = 0; $i < $limit; $i++) {
+			$articles[] = array(
+			    'title' 		=> (string)$xml->channel->item[$i]->title,
+			    'description' 	=> (string)$xml->channel->item[$i]->description,
+		    	'link' 			=> (string)$xml->channel->item[$i]->link,
+		    	'date' 			=> (string)$xml->channel->item[$i]->pubDate
+			);
+		}
+		/**/
+		/*
+		foreach ($xml->channel->item as $item) {
+		    $articles[] = array(
+			    'title' 		=> (string)$item->title,
+			    'description' 	=> (string)$item->description,
+		    	'link' 			=> (string)$item->link,
+		    	'date' 			=> (string)$item->pubDate
+			);
+		}
+		*/
+		return $articles;
+	}
+
+/**
+ * -----------------------------------------------------------------------------
  * FILE RETRIEVAL
  * -----------------------------------------------------------------------------
  */
