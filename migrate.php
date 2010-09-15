@@ -175,7 +175,8 @@ include_once('ww_config/model_functions.php');
 			link_url,
 			'',
 			link_desc,
-			link_cat
+			link_cat,
+			''
 	FROM ww_links;";
 	
 // tags

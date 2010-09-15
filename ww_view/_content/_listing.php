@@ -1,8 +1,8 @@
 <?php
 // some variables
 
-	$show_subcategories = 1;
-	$show_filters 		= 1;
+	$show_subcategories = 0;
+	$show_filters 		= 0;
 
 
 // meta tags for head section - slightly different ones for a search results page
@@ -213,9 +213,7 @@
 			}
 			
 		}
-
-	}
-	
+		
 	// remove parameters
 		echo '
 		<ul class="filter_list remove_filter_list">
@@ -233,6 +231,11 @@
 			<li>Tag <a href="'.$link_base.$author_param.'">'.$tag_title.'</a></li>';
 		}
 		echo '</ul>';		
+		
+
+	}
+	
+		
 	
 	
 	// output listing

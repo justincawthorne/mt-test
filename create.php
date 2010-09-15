@@ -238,6 +238,7 @@ include_once('ww_config/model_functions.php');
 	  attributes text,
 	  summary text,
 	  category varchar(30) default NULL,
+	  sort smallint(3) unsigned NOT NULL default 0,
 	  PRIMARY KEY  (id)
 	) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
 	";

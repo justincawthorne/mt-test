@@ -906,6 +906,9 @@
 		$query .= " ORDER BY category, nullsort, sort, id DESC";
 		$result = $conn->query($query);
 		$data = array();
+		if(empty($result)) {
+			return $data;
+		}
 		while($row = $result->fetch_assoc()) { 
 			$row = stripslashes_deep($row);
 			$data[$row['category']][] = $row;
